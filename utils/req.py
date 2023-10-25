@@ -29,6 +29,7 @@ def requestsd(url, data, headers=None, method='post'):
     else:
         response = requests.get(url, headers=headers, data=json.dumps(data))
     response_data = response.json()
+    print(f"{url}:{response_data}")
     # if "error" not in response_data and "images" in response_data:
     if "error" not in response_data:
         return response_data
@@ -48,6 +49,7 @@ def interrogate(image_path):
 
 def sd_models():
     response_data = requestsd(api_sd_models, data={}, method='get')
+
     if response_data is not False:
         return response_data
     return None
