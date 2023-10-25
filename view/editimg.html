@@ -414,14 +414,14 @@
       observeDOM( window.parent.document.getElementById('rmbg_box') ,function(){
         var imgElements = window.parent.document.querySelectorAll('#rmbg_box img');
         var imgElement1 = imgElements[0];
-        var imgElement2 = imgElements[1];
+        // var imgElement2 = imgElements[1];
         console.info(imgElement1)
-        console.info(imgElement2)
+        // console.info(imgElement2)
         if(imgElement1 !== undefined) {
             console.info(imgElement1.src)
-            console.info(imgElement2.src)
+            // console.info(imgElement2.src)
             pro_img = imgElement1.src
-            pro_mask_img = imgElement2.src
+            // pro_mask_img = imgElement2.src
             console.log('An img element has been added under #rmbg_box');
         }
       });
