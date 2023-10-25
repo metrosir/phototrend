@@ -53,10 +53,7 @@ class Api:
 
     def deft_scene(self):
         try:
-            i_path = '/data/aigc/faceSwap/other/b1.png'
-            i_path = '/data/aigc/faceSwap/other/d3.png'
-            i_path = '/data/aigc/faceSwap/other/d4.png'
             i_path = '/data/aigc/faceSwap/other/d2.png'
-            return FileResponse(f"{i_path}")
+            return FileResponse(f"{project_dir}/worker_data/template/d2.png")
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
