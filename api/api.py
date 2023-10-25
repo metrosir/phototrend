@@ -19,7 +19,7 @@ class Api:
 
     def read_html_file(self):
         file_path = f'{project_dir}/view/editimg.html'
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding='utf-8') as file:
             html_content = file.read()
         return HTMLResponse(content=html_content)
 
