@@ -53,6 +53,7 @@ history_dirs = datadir.get_history_dirs()
 models = sd_models()
 models_title = []
 commodity_def_model_idx = 0
+print(f"models:{models}")
 if models:
     for idx, model in enumerate(models):
         models_title.append(model['title'])
@@ -63,6 +64,7 @@ if models:
 vae_models = sd_vae()
 vae_models_title = []
 commodity_def_vae_idx = 0
+print(f"vae_models:{vae_models}")
 if vae_models:
     for idx, model in enumerate(vae_models):
         vae_models_title.append(model['model_name'])
