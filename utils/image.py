@@ -39,9 +39,9 @@ def image_to_base64(img_path):
     return False
 
 
-def remove_bg(inputim, outputim, mask=False):
+def remove_bg(inputim, outputim, mask=False, alpha_matting=True):
     with open(inputim, 'rb') as f:
         with open(outputim, 'wb') as ff:
             input=f.read()
-            output=remove(input, only_mask=mask)
+            output=remove(input, only_mask=mask, alpha_matting=alpha_matting)
             ff.write(output)

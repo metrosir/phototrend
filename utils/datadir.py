@@ -2,6 +2,7 @@
 import uuid
 import pathlib
 import os
+from utils.utils import project_dir
 
 
 def generate_uuid():
@@ -10,28 +11,29 @@ def generate_uuid():
 
 
 uuid = generate_uuid()
-project_dir = "/tmp/qilin"
-pathlib.Path(project_dir).mkdir(parents=True, exist_ok=True)
+history = f"{project_dir}/history/worker_data"
+pathlib.Path(history).mkdir(parents=True, exist_ok=True)
 
 # 默认场景图:需要初始化
-deft_scene_image = f'{project_dir}/def_scene_image/'
+deft_scene_image = f'{history}/def_scene_image/'
 
 # 场景图>商品图>合并图>mask图（扣除背景制作mask）> mask图（mask反转）>生成图
 # 商品图
-commodity_image_dir = project_dir + '/{uuid}/commodity_image'.format(uuid=uuid)
+commodity_image_dir = history + '/{uuid}/commodity_image'.format(uuid=uuid)
 # 商品图去背
-commodity_rembg_image_dir = project_dir + '/{uuid}/commodity_rembg_image'.format(uuid=uuid)
-commodity_rembg_mask_image_dir = project_dir + '/{uuid}/commodity_rembg_mask_image'.format(uuid=uuid)
+commodity_rembg_image_dir = history + '/{uuid}/commodity_rembg_image'.format(uuid=uuid)
+commodity_rembg_mask_image_dir = history + '/{uuid}/commodity_rembg_mask_image'.format(uuid=uuid)
 # 合并图
-commodity_merge_scene_image_dir = project_dir + '/{uuid}/commodity_merge_scene_image'.format(uuid=uuid)
+commodity_merge_scene_image_dir = history + '/{uuid}/commodity_merge_scene_image'.format(uuid=uuid)
 # 合并后的商品图 mask
-merge_after_mask_image_dir = project_dir + '/{uuid}/merge_after_mask_image'.format(uuid=uuid)
-mask_image_dir = project_dir + '/{uuid}/mask_image'.format(uuid=uuid)
+merge_after_mask_image_dir = history + '/{uuid}/merge_after_mask_image'.format(uuid=uuid)
+mask_image_dir = history + '/{uuid}/mask_image'.format(uuid=uuid)
 # mask反转
-merge_after_mask_cut_image_dir = project_dir + '/{uuid}/merge_after_mask_cut_image'.format(uuid=uuid)
+merge_after_mask_cut_image_dir = history + '/{uuid}/merge_after_mask_cut_image'.format(uuid=uuid)
 # generate 的图片
-generate_image_dir = project_dir + '/{uuid}/generate_image/{idx}'
-generate_glob_img = '/tmp/qilin/*/generate_image/*/*.png'
+generate_image_dir = history + '/{uuid}/generate_image/{idx}'
+generate_glob_img = history + '/*/generate_image/*/*.png'
+# print(f"generate_glob_img:{generate_glob_img}")
 
 
 def get_file_idx(is_star=False, check_dir=commodity_image_dir) -> str:
@@ -45,5 +47,8 @@ def get_file_idx(is_star=False, check_dir=commodity_image_dir) -> str:
     else:
         return '0'
 
+
+def get_history_dirs():
+    return os.listdir(history)
 
 print(f"uuid:{uuid}")

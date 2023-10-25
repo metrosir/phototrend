@@ -23,7 +23,7 @@ def rmbg(image) -> str:
         with open(commodity_image_path, 'wb') as ff:
             ff.write(f.read())
     remove_bg(commodity_image_path, commodity_rembg_image_path)
-    remove_bg(commodity_rembg_image_path, commodity_rembg_mask_image_path, True)
+    remove_bg(commodity_rembg_image_path, commodity_rembg_mask_image_path, mask=True, alpha_matting=True)
     # convert_png_to_mask(commodity_rembg_image_path, commodity_rembg_mask_image_path)
     # ! rembg i -a $commodity_image_path $commodity_rembg_image_path
     # ! rembg i -a -om $commodity_image_path $commodity_rembg_mask_image_path
@@ -35,9 +35,16 @@ def upload_file(files, current_files):
     return file_paths
 
 
-def refresh_history_img():
-    return glob.glob(datadir.generate_glob_img)
+def dir_uuid():
+    return datadir.uuid
 
+
+def refresh_history_img():
+    dirs = datadir.generate_glob_img
+    return glob.glob(dirs)
+
+
+history_dirs = datadir.get_history_dirs()
 
 with gr.Blocks() as G:
     gr.Markdown("商品图")
@@ -63,7 +70,6 @@ with gr.Blocks() as G:
                         with gr.Box():
                             html = """
                             <script>
-
                             </script>
                                 <iframe src="/iframe" width="500" height="600" id='scene_img' style="border:none;"></iframe>
                             """
@@ -83,22 +89,44 @@ with gr.Blocks() as G:
                             generate_progress = gr.Textbox(label="生成进度(Progress)", value="当前无生成任务(No task)",
                                                            interactive=False)
                 with gr.Box():
-                    gr.Markdown('生成结果(Generate Result)')
-                    output_generate_images = gr.Gallery(label='Output', show_label=False).style(columns=4, rows=4,
-                                                                                                height=500,
-                                                                                                object_fit="contain")
-                with gr.Box():
-                    with gr.Accordion(label='历史记录(History)', open=False):
-                        refresh_history = gr.Button('刷新(Refresh)')
-                        history_generate_images = gr.Gallery(fn=refresh_history_img).style(grid=8, height=600)
+                    with gr.Row():
+                        with gr.Tabs():
+                            with gr.TabItem("生成结果(Generate Result)"):
+                                with gr.Column():
+                                    output_generate_images = gr.Gallery(label='Output', show_label=False).style(columns=4, rows=4,
+                                                                                                        height=500,
+                                                                                                    object_fit="contain")
+                            with gr.TabItem('历史记录(History)'):
+                                with gr.Column():
+                                    with gr.Row():
+                                        with gr.Column():
+                                            total_history = gr.Button('刷新(Refresh)').style(height=10)
+                                    history_imgs = gr.Gallery(show_label=True).style(height=500)
+
+                # with gr.Box():
+                #     with gr.Accordion(label='历史记录(History)', open=False):
+                #         total_history = gr.Button('刷新(Refresh)')
+                #         history_imgs = gr.Gallery(show_label=True).style(height=600)
+                        # tt=gr.Dropdown(label='历史记录(History)')
+                        # def history_ui():
+                        #     for v_dir in history_dirs:
+                        #         with gr.Row():
+                        #             with gr.Column(scale= 2):
+                        #                 old_commodity = gr.Gallery(fn=refresh_history_img).style(grid=8, height=300)
+                        #             with gr.Column(scale= 2):
+                        #                 new_commodity = gr.Gallery(fn=refresh_history_img).style(grid=8, height=300)
+                        #             tuuid=gr.Text(visible=False, value=v_dir, label='uuid')
+                        #             with gr.Column():
+                        #                 refresh_history = gr.Button('刷新(Refresh)')
+                        #         refresh_history.click(fn=refresh_history_img, inputs=[tuuid], outputs=[old_commodity, new_commodity])
+                        # total_history.click(fn=history_ui, outputs=[tt], queue=False)
                 output_message = gr.Markdown()
 
                 run_button.click(fn=rmbg, inputs=[instance_images], outputs=[infer_progress, output_images])
 
                 run_generate.click(fn=generate_image, inputs=[pos_prompt, neg_prompt, batch_count],
                                    outputs=[generate_progress, output_generate_images])
-                refresh_history.click(fn=refresh_history_img, inputs=[], outputs=[history_generate_images])
-
+                total_history.click(fn=refresh_history_img, outputs=[history_imgs])
 
 
 if __name__ == '__main__':

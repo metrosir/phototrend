@@ -235,6 +235,6 @@ def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024)
                         generate_imgs.append(name)
                         with open(name, 'wb') as f:
                             f.write(img_data)
-        yield ["制作完成", generate_imgs]
+        yield [generate_imgs]
     else:
-        yield ["制作失败", None]
+        yield [None]
