@@ -8,20 +8,26 @@ import copy
 import utils.datadir as datadir
 
 from utils.image import image_to_base64
+from utils.cmd_args import opts
 
-
-sd_host = 'http://10.61.158.18:7860'
+# 'http://10.61.158.18:7860'
+sd_host = opts.sd_host
 api_txt2img = f'{sd_host}/sdapi/v1/txt2img'
 api_interrogate = f'{sd_host}/sdapi/v1/interrogate'
+api_sd_models = f'{sd_host}/sdapi/v1/sd-models'
+api_sd_vae = f'{sd_host}/sdapi/v1/sd-vae'
 
 
-def requestsd(url, data, headers=None):
+def requestsd(url, data, headers=None, method='post'):
     if headers is None:
         headers = {
             'accept': 'application/json',
             'Content-Type': 'application/json'
         }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    if method == 'post':
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+    else:
+        response = requests.get(url, headers=headers, data=json.dumps(data))
     response_data = response.json()
     # if "error" not in response_data and "images" in response_data:
     if "error" not in response_data:
@@ -40,6 +46,20 @@ def interrogate(image_path):
         return response_data['caption']
     return None
 
+def sd_models():
+    response_data = requestsd(api_sd_models, data={}, method='get')
+    if response_data is not False:
+        return response_data
+    return None
+
+
+def sd_vae():
+    response_data = requestsd(api_sd_vae, data={}, method='get')
+    if response_data is not False:
+        response_data.insert(0, {'model_name': 'Automatic', 'filename': ''})
+        response_data.insert(1, {'model_name': 'None', 'filename': ''})
+        return response_data
+    return None
 
 
 prompt = "\n RAW photo,photorealistic,(photorealistic:1.4),ultra high res,best quality,high quality,film grain,Fujifilm XT3,(8k),<lora:add_detail:1>"
@@ -58,7 +78,7 @@ negative_prompt = 'nsfw,(deformed iris, deformed pupils, semi-realistic, cgi, 3d
 negative_prompt = '(human:1.2),realisticvision-negative-embedding'
 
 
-def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024):
+def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count, contr_inp_weight=0.5, contr_ipa_weight=0.55, contr_lin_weight=0.7, width=768, height=1024):
     comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
     comm_merge_scene_mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
 
@@ -95,8 +115,8 @@ def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024)
         "override_settings": {
             # "sd_model_checkpoint": "civitai/SG_161222/Realistic_Vision_V5.1.safetensors [00445494c8]"
             # "sd_model_checkpoint": "civitai/Lykon/absoluterealityv1.K9Gm.safetensors"
-            "sd_model_checkpoint": "civitai/residentchiefnz/icbinpRelapseRC.zgS8.safetensors [b7f578674f]",
-            "sd_vae": "vae-ft-mse-840000-ema-pruned.safetensors"
+            "sd_model_checkpoint": select_model,
+            "sd_vae": select_vae
         },
         # "enable_hr": True,
         # ---
@@ -173,7 +193,7 @@ def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024)
     controlnet_inpaint_args['module'] = 'inpaint_only+lama'
     controlnet_inpaint_args['guidance_end'] = 1
     # 不带人
-    controlnet_inpaint_args['weight'] = 0.5
+    controlnet_inpaint_args['weight'] = contr_inp_weight
     # 带人
     # controlnet_inpaint_args['weight'] = 0.9
     controlnet_inpaint_args['control_mode'] = 0
@@ -184,14 +204,14 @@ def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024)
     controlent_ipAdapter_args['model'] = 'ip-adapter_sd15_plus [32cd8f7f]'
     controlent_ipAdapter_args['module'] = 'ip-adapter_clip_sd15'
     controlent_ipAdapter_args['guidance_end'] = 1
-    controlent_ipAdapter_args['weight'] = 0.55
+    controlent_ipAdapter_args['weight'] = contr_ipa_weight
     controlent_ipAdapter_args['control_mode'] = 2
     controlent_ipAdapter_args['image'] = image_to_base64(comm_merge_scene_im)
 
     controlnet_lineart_args['model'] = 'control_v11p_sd15_lineart [43d4be0d]'
     controlnet_lineart_args['module'] = 'lineart_realistic'
     controlnet_lineart_args['guidance_end'] = 1
-    controlnet_lineart_args['weight'] = 0.7
+    controlnet_lineart_args['weight'] = contr_lin_weight
     controlnet_lineart_args['control_mode'] = 2
     controlnet_lineart_args['image'] = image_to_base64(comm_merge_scene_im)
 
@@ -235,6 +255,6 @@ def generate_image(prompt, negative_prompt, batch_count, width=768, height=1024)
                         generate_imgs.append(name)
                         with open(name, 'wb') as f:
                             f.write(img_data)
-        yield [generate_imgs]
+        return generate_imgs
     else:
-        yield [None]
+        return None
