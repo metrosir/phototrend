@@ -24,13 +24,16 @@ def requestsd(url, data, headers=None, method='post'):
             'accept': 'application/json',
             'Content-Type': 'application/json'
         }
-    if method == 'post':
-        response = requests.post(url, headers=headers, data=json.dumps(data))
-    else:
-        response = requests.get(url, headers=headers, data=json.dumps(data))
+
+    try:
+        if method == 'post':
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+        else:
+            response = requests.get(url, headers=headers, data=json.dumps(data))
+    except Exception as e:
+        print("requests error:", str(e))
+        raise Exception(f"requests error, api:{url}")
     response_data = response.json()
-    print(f"{url}:{response_data}")
-    # if "error" not in response_data and "images" in response_data:
     if "error" not in response_data:
         return response_data
     else:

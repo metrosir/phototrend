@@ -11,7 +11,7 @@ def generate_uuid():
 
 
 uuid = generate_uuid()
-history = f"{project_dir}/history/worker_data"
+history = f"{project_dir}/worker_data/history"
 pathlib.Path(history).mkdir(parents=True, exist_ok=True)
 
 # 默认场景图:需要初始化

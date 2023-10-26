@@ -45,3 +45,21 @@ def remove_bg(inputim, outputim, mask=False, alpha_matting=True):
             input=f.read()
             output=remove(input, only_mask=mask, alpha_matting=alpha_matting)
             ff.write(output)
+
+
+def is_webp_image(image_path):
+    try:
+        image = Image.open(image_path)
+        return image.format == "WEBP"
+    except IOError:
+        return False
+
+
+def save_webp_image_with_transparency(image_path, save_path):
+    if is_webp_image(image_path):
+        image = Image.open(image_path)
+        new_image = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        new_image.paste(image, (0, 0), image)
+        new_image.save(save_path, format="WEBP", transparency=0)
+        return True
+    return False
