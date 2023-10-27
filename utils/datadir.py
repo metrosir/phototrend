@@ -11,8 +11,14 @@ def generate_uuid():
 
 
 uuid = generate_uuid()
+
+# 普通商品图
 history = f"{project_dir}/worker_data/history"
+
+# 服装商品图
+clothes_history = f"{project_dir}/worker_data/clothes_history"
 pathlib.Path(history).mkdir(parents=True, exist_ok=True)
+pathlib.Path(clothes_history).mkdir(parents=True, exist_ok=True)
 
 # 默认场景图:需要初始化
 deft_scene_image = f'{history}/def_scene_image/'
@@ -33,7 +39,24 @@ merge_after_mask_cut_image_dir = history + '/{uuid}/merge_after_mask_cut_image'.
 # generate 的图片
 generate_image_dir = history + '/{uuid}/generate_image/{idx}'
 generate_glob_img = history + '/*/generate_image/*/*.png'
-# print(f"generate_glob_img:{generate_glob_img}")
+
+
+
+clothes_merge_scene_dir = clothes_history + '/{uuid}/clothes_merge_scene_image'.format(uuid=uuid)
+clothes_dir = clothes_history + '/{uuid}/clothes_image'.format(uuid=uuid)
+clothes_mask_dir = clothes_history + '/{uuid}/clothes_mask_image'.format(uuid=uuid)
+clothes_mask_cut_dir = clothes_history + '/{uuid}/clothes_mask_cut_image'.format(uuid=uuid)
+
+clothes_generate_image_dir = clothes_history + '/{uuid}/clothes_generate_image/{idx}'
+clothes_generate_glob_img = clothes_history + '/*/clothes_generate_image/*/*.png'
+
+
+
+
+
+generate_inpaint_image_dir = history = f"{project_dir}/worker_data/inpaint_output/"
+pathlib.Path(generate_inpaint_image_dir).mkdir(parents=True, exist_ok=True)
+
 
 
 def get_file_idx(is_star=False, check_dir=commodity_image_dir) -> str:

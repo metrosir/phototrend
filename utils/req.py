@@ -71,7 +71,7 @@ prompt = "\n RAW photo,photorealistic,(photorealistic:1.4),ultra high res,best q
 prompt = "\n RAW photo,photorealistic,(dramatic lighting:1.4),ultra high res,best quality,high quality,film grain,Fujifilm XT3,(8k),<lora:add_detail:1>"
 # high_contrast:1.2 高对比度「」
 prompt = "\n (high_contrast:1.2), vivid photo effect, RAW photo,realistic,(dramatic lighting:1.2),ultra high res,best quality,high quality,<lora:add_detail:1>"
-prompt = "\n (high_contrast:1.2), vivid photo effect, RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,<lora:add_detail:1>"
+prompt = "\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,<lora:add_detail:1>"
 
 negative_prompt = '(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime),text,cropped,out of frame,worst quality,low quality,jpeg artifacts,ugly,duplicate,morbid,mutilated,extra fingers,mutated hands,poorly drawn hands,poorly drawn face,mutation,deformed,blurry,dehydrated,bad anatomy,bad proportions,extra limbs,cloned face,disfigured,gross proportions,malformed limbs,missing arms,missing legs,extra arms,extra legs,fused fingers,too many fingers,long neck,UnrealisticDream,'
 negative_prompt = '(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4),(deformed, distorted, disfigured:1.3),poorly drawn,bad anatomy,wrong anatomy,extra limb,missing limb,floating limbs,disconnected limbs,mutation,mutated,ugly,disgusting,amputation,badhandv4,'
@@ -81,11 +81,17 @@ negative_prompt = '(deformed iris, deformed pupils, semi-realistic, cgi, 3d, ren
 negative_prompt = 'BadDream, (UnrealisticDream:1.2)'
 negative_prompt = 'nsfw,(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4),(deformed, distorted, disfigured:1.3),poorly drawn,bad anatomy,wrong anatomy,extra limb,missing limb,floating limbs,disconnected limbs,mutation,mutated,ugly,disgusting,amputation,badhandv4'
 negative_prompt = '(human:1.2),realisticvision-negative-embedding'
+negative_prompt_clothes = 'realisticvision-negative-embedding'
 
 
-def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count, contr_inp_weight=0.5, contr_ipa_weight=0.55, contr_lin_weight=0.7, width=768, height=1024):
-    comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
-    comm_merge_scene_mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
+def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count, contr_inp_weight=0.5, contr_ipa_weight=0.55, contr_lin_weight=0.7, type=1, width=768, height=1024):
+
+    if type == 1:
+        comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
+        comm_merge_scene_mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
+    else:
+        comm_merge_scene_im = f'{datadir.clothes_merge_scene_dir}/{datadir.get_file_idx(check_dir=datadir.clothes_dir)}.png'
+        comm_merge_scene_mask_im = f'{datadir.clothes_mask_dir}/{datadir.get_file_idx(check_dir=datadir.clothes_dir)}.png'
 
     def mask_invert(mask_img, mask_img_invert):
         # pip install Pillow
@@ -175,10 +181,16 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
     gener_images_path = './output'
     # input_image = f'./input_image/shangping/{shangping}'
 
-    if not pathlib.Path(datadir.merge_after_mask_cut_image_dir).exists():
-        pathlib.Path(datadir.merge_after_mask_cut_image_dir).mkdir(parents=True, exist_ok=True)
-    comm_merge_scene_mask_cut_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
-    mask_invert(comm_merge_scene_mask_im, comm_merge_scene_mask_cut_im)
+    if type == 1:
+        if not pathlib.Path(datadir.merge_after_mask_cut_image_dir).exists():
+            pathlib.Path(datadir.merge_after_mask_cut_image_dir).mkdir(parents=True, exist_ok=True)
+        comm_merge_scene_mask_cut_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
+        mask_invert(comm_merge_scene_mask_im, comm_merge_scene_mask_cut_im)
+    else:
+        if not pathlib.Path(datadir.clothes_mask_cut_dir).exists():
+            pathlib.Path(datadir.clothes_mask_cut_dir).mkdir(parents=True, exist_ok=True)
+        comm_merge_scene_mask_cut_im = f'{datadir.clothes_mask_cut_dir}/{datadir.get_file_idx(check_dir=datadir.clothes_dir)}.png'
+        mask_invert(comm_merge_scene_mask_im, comm_merge_scene_mask_cut_im)
 
     # if not pathlib.Path(comm_merge_scene_mask_cut_im).exists():
 
@@ -244,8 +256,14 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
 
     response_data = requestsd(api_txt2img, data=data)
     generate_imgs = []
-    idx = datadir.get_file_idx(check_dir=datadir.commodity_merge_scene_image_dir)
-    generate_image_sub_dir = datadir.generate_image_dir.format(uuid=datadir.uuid, idx=idx)
+
+    if type == 1:
+        idx = datadir.get_file_idx(check_dir=datadir.commodity_merge_scene_image_dir)
+        generate_image_sub_dir = datadir.generate_image_dir.format(uuid=datadir.uuid, idx=idx)
+    else:
+        idx = datadir.get_file_idx(check_dir=datadir.clothes_dir)
+        generate_image_sub_dir = datadir.clothes_generate_image_dir.format(uuid=datadir.uuid, idx=idx)
+
     if not pathlib.Path(generate_image_sub_dir).exists():
         pathlib.Path(generate_image_sub_dir).mkdir(parents=True, exist_ok=True)
 

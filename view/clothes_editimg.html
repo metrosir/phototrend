@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pica/4.1.2/pica.min.js"></script> -->
+  </head>
+  <style>
+        @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+        }
+        #loading {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;
+        }
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+        }
+  </style>
+  <body>
+    <div id="head" style="margin-bottom: 15px;">
+        <input type="file" id="file-input" style="display: none;">
+        <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
+        <input type="button" id="sync_img" value="同步产品图">
+        <button id="export-button">上传资源</button>
+        <button id="download-button">导出到本地查看</button>
+         <button id="download-top1-button">导出第一个图层到本地</button>
+    </div>
+    <div id="canvas_contain" style="margin-top: 15px;">
+        <canvas id="canvas" width="384" height="512" style="border:1px solid #ccc"></canvas>
+    </div>
+    <div id="loading">
+        <div id="loader-contain" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="loader" ></div>
+        </div>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/fabric"></script>
+    <script src="http://nodeca.github.io/pica/dist/pica.js"></script>
+    <script>
+        var human_image = ''
+        var clothes_image = ''
+        var def_prompt=''
+        var width=768
+        var height=1024
+      var canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
+      canvas.on('mouse:over', function(e) {
+        var target = e.target;
+        if (target) {
+          target.set({
+            borderColor: '#ccc',
+            cornerColor: 'black',
+            cornerSize: 6,
+            transparentCorners: true
+          });
+          canvas.renderAll();
+        }
+      });
+
+      canvas.on('mouse:out', function(e) {
+        var target = e.target;
+        if (target) {
+          target.set({
+            borderColor: 'transparent',
+            cornerColor: 'transparent',
+            cornerSize: 0,
+            transparentCorners: true
+          });
+          canvas.renderAll();
+        }
+      });
+
+    //   自定义场景图
+      document.getElementById('file-input').addEventListener("change", function (e) {
+        var file = e.target.files[0];
+        var reader = new FileReader();
+
+        reader.onload = function (f) {
+          var data = f.target.result;
+          fabric.Image.fromURL(data, function (img) {
+            var oImg = img;
+            var canvasAspectRatio = canvas.width / canvas.height;
+            var imgAspectRatio = img.width / img.height;
+            var scaleFactor, left, top;
+
+            if (canvasAspectRatio > imgAspectRatio) {
+              scaleFactor = canvas.height / img.height;
+              left = (canvas.width - img.width * scaleFactor) / 2;
+              top = 0;
+            } else {
+              scaleFactor = canvas.width / img.width;
+              left = 0;
+              top = (canvas.height - img.height * scaleFactor) / 2;
+            }
+
+            oImg.set({
+              left: left,
+              top: top,
+              scaleX: scaleFactor,
+              scaleY: scaleFactor,
+              cornerSize: 0,
+              // perPixelTargetFind:true
+            });
+
+            canvas.add(oImg).renderAll();
+            canvas.setActiveObject(oImg);
+            canvas.moveTo(oImg, canvas.getObjects().length-1);
+            // canvas.on('object:added', function() {
+            //   canvas.moveTo(oImg, canvas.getObjects().length-1);
+            // });
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+
+    //   删除图层
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Delete' || event.key == 'Backspace') {
+          var activeObject = canvas.getActiveObject();
+          if (activeObject) {
+            canvas.remove(activeObject);
+          }
+        }
+      });
+
+      document.getElementById('sync_img').addEventListener("click", function () {
+        if (human_image=='' || human_image == undefined) {
+          alert('请同步人物图片！')
+          return false
+        }
+        if (clothes_image == '' || clothes_image== undefined) {
+          alert('请同步衣服图片！')
+          return false
+        }
+
+        fabric.Image.fromURL(human_image, function (oImg) {
+          var canvasAspectRatio = canvas.width / canvas.height;
+          var imgAspectRatio = oImg.width / oImg.height;
+          var scaleFactor, left, top;
+
+          if (canvasAspectRatio > imgAspectRatio) {
+            scaleFactor = canvas.height / oImg.height;
+            left = (canvas.width - oImg.width * scaleFactor) / 2;
+            top = 0;
+          } else {
+            scaleFactor = canvas.width / oImg.width;
+            left = 0;
+            top = (canvas.height - oImg.height * scaleFactor) / 2;
+          }
+
+          oImg.set({
+            left: left,
+            top: top,
+            scaleX: scaleFactor,
+            scaleY: scaleFactor,
+            cornerSize: 0,
+          });
+
+          canvas.add(oImg).renderAll();
+          canvas.setActiveObject(oImg);
+          canvas.moveTo(oImg, canvas.getObjects().length-1);
+        });
+
+      });
+
+        //   拉取默认场景图
+      window.onload = function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/deft_scene', true);
+        xhr.responseType = 'blob';
+        xhr.onload = function(e) {
+          if (this.status == 200) {
+            var blob = this.response;
+            var img = URL.createObjectURL(blob);
+            fabric.Image.fromURL(img, function (oImg) {
+              var canvasAspectRatio = canvas.width / canvas.height;
+              var imgAspectRatio = oImg.width / oImg.height;
+              var scaleFactor, left, top;
+
+              if (canvasAspectRatio > imgAspectRatio) {
+                scaleFactor = canvas.height / oImg.height;
+                left = (canvas.width - oImg.width * scaleFactor) / 2;
+                top = 0;
+              } else {
+                scaleFactor = canvas.width / oImg.width;
+                left = 0;
+                top = (canvas.height - oImg.height * scaleFactor) / 2;
+              }
+
+              oImg.set({
+                left: left,
+                top: top,
+                scaleX: scaleFactor,
+                scaleY: scaleFactor,
+                cornerSize: 0,
+              });
+
+              canvas.add(oImg).renderAll();
+              canvas.setActiveObject(oImg);
+              canvas.moveTo(oImg, canvas.getObjects().length-1);
+            });
+          }
+        };
+        xhr.send();
+      };
+
+    //   场景和商品图合并完成，进行同步
+      document.getElementById('export-button').addEventListener("click", function () {
+        var objects = canvas.getObjects();
+        if (objects.length <= 1) {
+          console.log("没有图层存在");
+          alert('请同步产品图！')
+          return false
+        }
+
+        var link = document.createElement('a');
+        var canvasToExport = document.createElement('canvas');
+        var scaleFactor = width / height;
+        var exportWidth, exportHeight;
+
+        if (scaleFactor > 1) {
+          exportWidth = width;
+          exportHeight = width / scaleFactor;
+        } else {
+          exportWidth = height * scaleFactor;
+          exportHeight = height;
+        }
+
+        canvasToExport.width = exportWidth;
+        canvasToExport.height = exportHeight;
+        var ctx = canvasToExport.getContext('2d');
+        ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
+        canvasToExport.toBlob(function (blob) {
+          document.getElementById('loading').style.display = 'block';
+          var formData = new FormData();
+          formData.append('file', blob);
+          formData.append('img_type', 1);
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/upload_clothes_image?img_type=1', true);
+          xhr.send(formData);
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                if (xhr.status == 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response);
+                    // {"data": "/tmp/qilin/4e56448b/commodity_merge_scene_image/0.png",    "caption": "a white vase with a green plant next to it on a white table with a green wall behind it, a 3D render, product photo, plasticien, Enguerrand Quarton"}
+                    var textarea = window.parent.document.querySelector('#clothes_prompt textarea');
+                    if (def_prompt === '') {
+                        def_prompt=textarea.value
+                        caption = response.caption.split(',')[0]
+                        textarea.value = caption +','+ def_prompt;
+                    } else {
+                        caption = response.caption.split(',')[0]
+                        textarea.value = caption +','+ def_prompt;
+                    }
+                    uploadClothes()
+                } else {
+                    alert("请求失败")
+                }
+            }
+            document.getElementById('loading').style.display = 'none';
+          };
+        }, 'image/png', 1);
+      });
+
+      document.getElementById('download-button').addEventListener("click", function () {
+        var objects = canvas.getObjects();
+        if (objects.length <= 1) {
+          console.log("没有图层存在");
+          alert('请同步产品图！')
+          return false
+        }
+
+        var link = document.createElement('a');
+        var canvasToExport = document.createElement('canvas');
+        var scaleFactor = width / height;
+        var exportWidth, exportHeight;
+
+        if (scaleFactor > 1) {
+          exportWidth = width;
+          exportHeight = width / scaleFactor;
+        } else {
+          exportWidth = height * scaleFactor;
+          exportHeight = height;
+        }
+
+        canvasToExport.width = exportWidth;
+        canvasToExport.height = exportHeight;
+        var ctx = canvasToExport.getContext('2d');
+        ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
+        canvasToExport.toBlob(function (blob) {
+          link.href = URL.createObjectURL(blob);
+          link.download = 'canvas.png';
+          link.click();
+        }, 'image/png', 1);
+        afterComm(false)
+      });
+
+      canvas.on('object:modified', function (e) {
+        var modifiedObject = e.target;
+        if (modifiedObject === canvas.getObjects()[1]) {
+          var adjustedX = modifiedObject.left * 2;
+          var adjustedY = modifiedObject.top * 2;
+          var adjustedWidth = modifiedObject.getScaledWidth();
+          var adjustedHeight = modifiedObject.getScaledHeight();
+          console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
+        }
+      });
+      function afterComm(is_upload=true) {
+
+        var link = document.createElement('a');
+        var canvasToExport = document.createElement('canvas');
+        var scaleFactor = width / height;
+        var exportWidth, exportHeight;
+
+        if (scaleFactor > 1) {
+          exportWidth = width;
+          exportHeight = width / scaleFactor;
+        } else {
+          exportWidth = height * scaleFactor;
+          exportHeight = height;
+        }
+        var objects = canvas.getObjects();
+        if (objects.length <= 1) {
+          return false
+        }
+        var secondObject = objects[1];
+        var adjustedX = secondObject.left*2
+        var adjustedY = secondObject.top*2
+        var adjustedWidth = secondObject.getScaledWidth() * 2;
+        var adjustedHeight = secondObject.getScaledHeight() * 2;
+        console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight)
+
+
+        canvasToExport.width = exportWidth;
+        canvasToExport.height = exportHeight;
+        var ctx = canvasToExport.getContext('2d');
+        var objects = canvas.getObjects();
+        var layerCount = objects.length;
+
+        // 绘制第二个图层对象
+        ctx.drawImage(secondObject.getElement(), adjustedX, adjustedY, adjustedWidth, adjustedHeight);
+        if (is_upload) {
+          canvasToExport.toBlob(function (blob) {
+            document.getElementById('loading').style.display = 'block';
+            var formData = new FormData();
+            formData.append('file', blob);
+            formData.append('img_type', 2);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload_clothes_image?img_type=2', true);
+            xhr.send(formData);
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState == 4) {
+                  if (xhr.status == 200) {
+                      var response = JSON.parse(xhr.responseText);
+                      console.log(response);
+                  } else {
+                      alert("请求失败")
+                  }
+              }
+              document.getElementById('loading').style.display = 'none';
+            };
+          }, 'image/png', 1);
+          return null
+        }
+        canvasToExport.toBlob(function (blob) {
+          link.href = URL.createObjectURL(blob);
+          link.download = 'second_layer.png';
+          link.click();
+        }, 'image/png', 1);
+      }
+
+      function uploadClothes(is_upload=true) {
+          var scaleFactor = width / height;
+        var exportWidth, exportHeight;
+        if (scaleFactor > 1) {
+          exportWidth = width;
+          exportHeight = width / scaleFactor;
+        } else {
+          exportWidth = height * scaleFactor;
+          exportHeight = height;
+        }
+        var objects = canvas.getObjects();
+        if (objects.length <= 0) {
+          return false
+        }
+        var secondObject = objects[1];
+        var adjustedX = secondObject.left*2
+        var adjustedY = secondObject.top*2
+        var adjustedW =  secondObject.getScaledWidth()*2
+        var adjustedH =  secondObject.getScaledHeight()*2
+
+        fabric.Image.fromURL(clothes_image, function(cl_img) {
+          console.info(cl_img._element)
+          var exportCanvas = document.createElement('canvas');
+          exportCanvas.width=exportWidth
+          exportCanvas.height=exportHeight
+          ctx = exportCanvas.getContext('2d');
+
+          ctx.drawImage(cl_img.getElement(), adjustedX, adjustedY, adjustedW, adjustedH);
+
+        if (is_upload) {
+          exportCanvas.toBlob(function (blob) {
+            document.getElementById('loading').style.display = 'block';
+            var formData = new FormData();
+            formData.append('file', blob);
+            formData.append('img_type', 2);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload_clothes_image?img_type=2', true);
+            xhr.send(formData);
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState == 4) {
+                  if (xhr.status == 200) {
+                      var response = JSON.parse(xhr.responseText);
+                      console.log(response);
+                  } else {
+                      alert("请求失败")
+                  }
+              }
+              document.getElementById('loading').style.display = 'none';
+            };
+          }, 'image/png', 1);
+          return null
+        }
+          // 导出画布
+          exportCanvas.toBlob(function (blob) {
+            // alert(3)
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'second_layer_with_mask.png';
+            link.click();
+          }, 'image/png', 1);
+        });
+      }
+
+      document.getElementById('download-top1-button').addEventListener("click", function () {
+        // var mask_image='/clothes_imag'
+        var scaleFactor = width / height;
+        var exportWidth, exportHeight;
+        if (scaleFactor > 1) {
+          exportWidth = width;
+          exportHeight = width / scaleFactor;
+        } else {
+          exportWidth = height * scaleFactor;
+          exportHeight = height;
+        }
+        var objects = canvas.getObjects();
+        if (objects.length <= 0) {
+          return false
+        }
+        var secondObject = objects[1];
+        var adjustedX = secondObject.left*2
+        var adjustedY = secondObject.top*2
+        var adjustedW =  secondObject.getScaledWidth()*2
+        var adjustedH =  secondObject.getScaledHeight()*2
+
+        fabric.Image.fromURL(clothes_image, function(cl_img) {
+          console.info(cl_img._element)
+          var exportCanvas = document.createElement('canvas');
+          exportCanvas.width=exportWidth
+          exportCanvas.height=exportHeight
+          ctx = exportCanvas.getContext('2d');
+
+          ctx.drawImage(cl_img.getElement(), adjustedX, adjustedY, adjustedW, adjustedH);
+          // ctx.globalCompositeOperation = 'source-in';
+          // ctx.drawImage(cl_img.getElement(), adjustedX, adjustedY, exportWidth, exportHeight);
+
+          // 导出画布
+          exportCanvas.toBlob(function (blob) {
+            // alert(3)
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'second_layer_with_mask.png';
+            link.click();
+          }, 'image/png', 1);
+        });
+      });
+
+
+
+      function exportSecondLayerWithMask() {}
+
+      var observeDOM = (function(){
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver,
+        eventListenerSupported = window.addEventListener;
+
+        return function(obj, callback){
+          if( MutationObserver ){
+            var obs = new MutationObserver(function(mutations, observer){
+              if( mutations[0].addedNodes.length || mutations[0].removedNodes.length )
+                callback();
+            });
+            obs.observe( obj, { childList:true, subtree:true });
+          }
+          else if( eventListenerSupported ){
+            obj.addEventListener('DOMNodeInserted', callback, false);
+            obj.addEventListener('DOMNodeRemoved', callback, false);
+          }
+        };
+      })();
+      observeDOM( window.parent.document.getElementById('human_image') ,function(){
+        var imgElements = window.parent.document.querySelectorAll('#human_image img');
+        var imgElement1 = imgElements[0];
+        if (imgElement1 == undefined) {
+            human_image = ''
+        } else {
+            human_image = imgElement1.src
+        }
+
+        console.log('An img element has been added under #human_image');
+      });
+      observeDOM( window.parent.document.getElementById('clothes_image') ,function(){
+        var imgElements = window.parent.document.querySelectorAll('#clothes_image img');
+        var imgElement1 = imgElements[0];
+        if (imgElement1 == undefined) {
+            clothes_image = ''
+        } else {
+            clothes_image = imgElement1.src
+        }
+        console.log('An img element has been added under #clothes_image');
+      });
+    </script>
+  </body>
+</html>

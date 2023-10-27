@@ -4,7 +4,7 @@ import uuid
 import os
 import glob
 import utils.datadir as datadir
-from utils.req import generate_image, prompt, negative_prompt, sd_models, sd_vae
+from utils.req import generate_image, prompt, negative_prompt, negative_prompt_clothes, sd_models, sd_vae
 # from utils.image import remove_bg, convert_png_to_mask
 import utils.image as image_utils
 from utils.cmd_args import opts as cmd_opts
@@ -58,8 +58,11 @@ def dir_uuid():
     return datadir.uuid
 
 
-def refresh_history_img():
-    dirs = datadir.generate_glob_img
+def refresh_history_img(type=1):
+    if type==1:
+        dirs = datadir.generate_glob_img
+    else:
+        dirs = datadir.clothes_generate_glob_img
     return glob.glob(dirs)
 
 
@@ -99,6 +102,7 @@ if vae_models:
 
 print("vae_models_title:", vae_models_title)
 def commodity_tab():
+    generate_type = 1
     with gr.Blocks() as G:
         with gr.Blocks() as commodity:
             with gr.Row():
@@ -195,29 +199,38 @@ def commodity_tab():
 def commodity_hand_ui():
     with gr.Blocks() as G:
         with gr.Blocks() as commodity:
+            gr.Markdown('实验中...')
+
+        return G
+
+def clothes_upload_file(human, clothes):
+    pass
+
+
+def clothes_ui():
+    with gr.Blocks() as G:
+        with gr.Blocks():
             with gr.Row():
-                with gr.Column():
-                    with gr.Box():
-                        gr.Markdown('上传图片(Upload image)')
-                        instance_images = gr.Image(type='filepath').style(height=300)
-                with gr.Column():
-                    with gr.Box():
-                        gr.Markdown('去背结果(Remove background result)')
-                        output_images = gr.Gallery(label='Output', show_label=False, elem_id='rmbg_box').style(
-                            columns=3, rows=1,
-                            height=300, object_fit="contain")
-                with gr.Column():
-                    gr.Textbox(label="任务ID", value=datadir.uuid, interactive=False)
-                    run_button = gr.Button('去背(remove background)')
-                    # infer_progress = gr.Textbox(label="去背进度(Progress)", value="当前无生成任务(No task)",
-                    #                             interactive=False)
+                with gr.Tabs():
+
+                    with gr.TabItem("上传去背后的图片(Remove background result)"):
+                        with gr.Row():
+                            with gr.Column():
+                                gr.Markdown('上传人物图片(Upload image)')
+                                human_image = gr.Image(type='filepath', elem_id="human_image").style(height=300)
+                            with gr.Column():
+                                gr.Markdown('上传衣服图片(Upload image)')
+                                clothes_image = gr.Image(type='filepath', elem_id="clothes_image").style(height=300)
+                        # with gr.Row():
+                            # result_rm_img_but = gr.Button('上传(Upload)')
+                            # result_rm_img_but.click(fn=clothes_upload_file, inputs=[human_image, clothes_image])
             with gr.Row():
                 with gr.Column():
                     with gr.Box():
                         html = """
                         <script>
                         </script>
-                            <iframe src="/iframe" width="800" height="600" id='scene_img' style="border:none;"></iframe>
+                            <iframe src="/iframe_clothes" width="800" height="600" id='scene_img' style="border:none;"></iframe>
                         """
                         html_element = gr.HTML(html)
                 with gr.Column():
@@ -229,11 +242,11 @@ def commodity_hand_ui():
                                                            value=models_title[commodity_def_model_idx],
                                                            interactive=True).style(width=50)
 
-                            pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="comm_prompt",
+                            pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="clothes_prompt",
                                                     value=prompt,
                                                     interactive=True)
                             neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=3,
-                                                    value=negative_prompt,
+                                                    value=negative_prompt_clothes,
                                                     interactive=True)
                             with gr.Box():
                                 batch_count = gr.Slider(minimum=1, step=1, label='生成数量(Batch count)', value=1,
@@ -269,22 +282,13 @@ def commodity_hand_ui():
                                         total_history = gr.Button('刷新(Refresh)').style(height=10)
                                 history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
 
-            output_message = gr.Markdown()
-
-            run_button.click(fn=rmbg, inputs=[instance_images], outputs=[output_images])
+            generate_type = gr.Text(value=1, visible=False)
 
             run_generate.click(fn=generate_image,
                                inputs=[select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight],
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type],
                                outputs=[output_generate_images])
-            total_history.click(fn=refresh_history_img, outputs=[history_imgs])
-
-        return G
-
-
-def clothes_ui():
-    with gr.Blocks() as G:
-        gr.Markdown("换装……")
+            total_history.click(fn=refresh_history_img, inputs=[generate_type], outputs=[history_imgs])
     return G
 
 
