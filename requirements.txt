@@ -7,3 +7,4 @@ requests
 Pillow
 accelerate
 urllib3==1.25.11
+torchvision==0.15.2+cu118 -f https://download.pytorch.org/whl/cu118/torch_stable.html
