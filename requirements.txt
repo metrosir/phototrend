@@ -1,6 +1,6 @@
 rembg[gpu,cli]
 onnxruntime-gpu==1.15
-gradio
+gradio==3.41.0
 opencv-python
 requests
 #PIL
