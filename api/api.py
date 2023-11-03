@@ -91,9 +91,13 @@ class Api:
             return {"data": f"{i_path}, type{img_type}", "caption": interrogate(i_path)}
 
 
-    def deft_scene(self):
+
+    def deft_scene(self, type: Optional[int] = None):
         try:
-            return FileResponse(f"{project_dir}/worker_data/template/d2.png")
+            if type == 1:
+                return FileResponse(f"{project_dir}/worker_data/template/768x1024.png")
+            else:
+                return FileResponse(f"{project_dir}/worker_data/template/800x1422.jpeg")
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
 

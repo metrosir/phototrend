@@ -79,6 +79,7 @@ def auto_resize_to_pil(input_image, mask_image):
     assert init_image.size == mask_image.size, "The sizes of the image and mask do not match"
     width, height = init_image.size
 
+    #
     new_height = (height // 8) * 8
     new_width = (width // 8) * 8
     if new_width < width or new_height < height:

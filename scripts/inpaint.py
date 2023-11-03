@@ -83,7 +83,6 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
     controlnet = []
     if len(controlnets) > 0:
         for contr_info in controlnets:
-            # contr_tmp = contr_info.copy()
             controlnet_images.append(load_image(contr_info['image']))
             controlnet_scale.append(contr_info['scale'])
             path = contr_info['model_path']
@@ -96,11 +95,6 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
             )
 
     local_files_only = True
-
-    cannay_model_path = '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/control_v11p_sd15_canny.pth'
-    cannay_model_path = 'lllyasviel/sd-controlnet-canny'
-    # cannay_image = '/data/aigc/stable-diffusion-webui/extensions/sd-webui-inpaint-anything/images/canny_1.png'
-    # cannay_image = load_image(cannay_image)
 
     try:
         # controlnet=[
@@ -161,6 +155,7 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
 
         generator = torch_generator.manual_seed(seed)
 
+        # generator = torch.Generator(device="cpu").manual_seed(1)
         pipe_args_dict = {
             "prompt": prompt,
             "image": init_image,
@@ -173,6 +168,8 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
             "guidance_scale": cfg_scale,
             "negative_prompt": n_prompt,
             "generator": generator,
+            "strength": 0.5,
+            "eta": 0.1,
         }
 
         print(f"pipe_args_dict:{pipe_args_dict}")

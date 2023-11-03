@@ -84,9 +84,9 @@ negative_prompt = '(human:1.2),realisticvision-negative-embedding'
 negative_prompt_clothes = 'realisticvision-negative-embedding'
 
 
-def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count, contr_inp_weight=0.5, contr_ipa_weight=0.55, contr_lin_weight=0.7, type=1, width=768, height=1024):
-
-    if type == 1:
+def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count, contr_inp_weight=0.5, contr_ipa_weight=0.55, contr_lin_weight=0.7, g_type=1, width=768, height=1024):
+    print(width, height, prompt)
+    if int(g_type) == 1:
         comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
         comm_merge_scene_mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
     else:
@@ -181,7 +181,7 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
     gener_images_path = './output'
     # input_image = f'./input_image/shangping/{shangping}'
 
-    if type == 1:
+    if int(g_type) == 1:
         if not pathlib.Path(datadir.merge_after_mask_cut_image_dir).exists():
             pathlib.Path(datadir.merge_after_mask_cut_image_dir).mkdir(parents=True, exist_ok=True)
         comm_merge_scene_mask_cut_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
@@ -257,7 +257,7 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
     response_data = requestsd(api_txt2img, data=data)
     generate_imgs = []
 
-    if type == 1:
+    if int(g_type) == 1:
         idx = datadir.get_file_idx(check_dir=datadir.commodity_merge_scene_image_dir)
         generate_image_sub_dir = datadir.generate_image_dir.format(uuid=datadir.uuid, idx=idx)
     else:

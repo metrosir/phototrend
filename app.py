@@ -102,7 +102,6 @@ if vae_models:
 
 print("vae_models_title:", vae_models_title)
 def commodity_tab():
-    generate_type = 1
     with gr.Blocks() as G:
         with gr.Blocks() as commodity:
             with gr.Row():
@@ -133,7 +132,7 @@ def commodity_tab():
                         html = """
                         <script>
                         </script>
-                            <iframe src="/iframe" width="800" height="600" id='scene_img' style="border:none;"></iframe>
+                            <iframe src="/iframe" width="500" height="600" id='scene_img' style="border:none;"></iframe>
                         """
                         html_element = gr.HTML(html)
                 with gr.Column():
@@ -144,13 +143,24 @@ def commodity_tab():
                                                            elem_id="select_model_list",
                                                            value=models_title[commodity_def_model_idx],
                                                            interactive=True).style(width=50)
-
+                            def prompt_change(val):
+                                return gr.Textbox.update(value=val)
                             pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="comm_prompt",
                                                     value=prompt,
                                                     interactive=True)
+                            pos_prompt.change(prompt_change, [pos_prompt])
                             neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=3,
                                                     value=negative_prompt,
                                                     interactive=True)
+
+                            def g_wh_change(size):
+                                return gr.Text.update(value=size)
+                            g_width = gr.Text(elem_id="g_width",
+                                              value=768, visible=True, interactive=True)
+                            g_width.change(g_wh_change, [g_width])
+                            g_height = gr.Text(elem_id="g_height",
+                                               value=1024, visible=True, interactive=True)
+                            g_height.change(g_wh_change, [g_height])
                             with gr.Box():
                                 batch_count = gr.Slider(minimum=1, step=1, label='生成数量(Batch count)', value=1,
                                                         elem_id="txt2img_batch_count")
@@ -167,7 +177,7 @@ def commodity_tab():
                                                          value=0.55, elem_id="ip_adapter_weight")
                             contr_lin_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Lineart weight',
                                                          value=0.7, elem_id="lineart_weight")
-
+                            generate_type = gr.Text(value=1, visible=False, elem_id="generate_type")
                     run_generate = gr.Button('开始制作(Generate)')
             with gr.Box():
                 with gr.Row():
@@ -189,7 +199,7 @@ def commodity_tab():
 
             run_generate.click(fn=generate_image,
                                inputs=[select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight],
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, g_width, g_height],
                                outputs=[output_generate_images])
             total_history.click(fn=refresh_history_img, outputs=[history_imgs])
 
@@ -282,7 +292,7 @@ def clothes_ui():
                                         total_history = gr.Button('刷新(Refresh)').style(height=10)
                                 history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
 
-            generate_type = gr.Text(value=1, visible=False)
+            generate_type = gr.Text(value=2, visible=False)
 
             run_generate.click(fn=generate_image,
                                inputs=[select_model, select_vae, pos_prompt, neg_prompt, batch_count,

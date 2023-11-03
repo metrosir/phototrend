@@ -24,6 +24,11 @@
   <body>
     <div id="head" style="margin-bottom: 15px;">
         <input type="file" id="file-input" style="display: none;">
+
+        <select id="size-select">
+            <option value="1">768x1024</option>
+            <option value="2">800x1422</option>
+        </select>
         <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
         <input type="button" id="sync_img" value="同步产品图">
         <button id="export-button">上传资源</button>
@@ -51,11 +56,37 @@
     <script src="https://cdn.jsdelivr.net/npm/fabric"></script>
     <script src="http://nodeca.github.io/pica/dist/pica.js"></script>
     <script>
+        var sizes = {
+            1: {
+                'width': 768,
+                'height': 1024,
+                'c_width': 384,
+                'c_height': 512
+            },
+            2: {
+                'width': 800,
+                'height': 1422,
+                'c_width': 400,
+                'c_height': 711
+            },
+        }
         var pro_img = ''
         var pro_mask_img = ''
         var def_prompt=''
-      var canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
-      canvas.on('mouse:over', function(e) {
+        var width=768
+        var height=1024
+        var canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
+
+        document.getElementById('size-select').addEventListener("change", function () {
+        var size = document.getElementById('size-select').value;
+            width = sizes[size].width
+            height = sizes[size].height
+            canvas.setWidth(sizes[size].c_width);
+            canvas.setHeight(sizes[size].c_height);
+            sceneImg(size)
+        })
+
+        canvas.on('mouse:over', function(e) {
         var target = e.target;
         if (target) {
           target.set({
@@ -66,9 +97,9 @@
           });
           canvas.renderAll();
         }
-      });
+        });
 
-      canvas.on('mouse:out', function(e) {
+        canvas.on('mouse:out', function(e) {
         var target = e.target;
         if (target) {
           target.set({
@@ -79,10 +110,10 @@
           });
           canvas.renderAll();
         }
-      });
+        });
 
-    //   自定义场景图
-      document.getElementById('file-input').addEventListener("change", function (e) {
+        //   自定义场景图
+        document.getElementById('file-input').addEventListener("change", function (e) {
         var file = e.target.files[0];
         var reader = new FileReader();
 
@@ -122,19 +153,19 @@
           });
         };
         reader.readAsDataURL(file);
-      });
+        });
 
-    //   删除图层
-      document.addEventListener('keydown', function(event) {
+        //   删除图层
+        document.addEventListener('keydown', function(event) {
         if (event.key === 'Delete' || event.key == 'Backspace') {
           var activeObject = canvas.getActiveObject();
           if (activeObject) {
             canvas.remove(activeObject);
           }
         }
-      });
+        });
 
-      document.getElementById('sync_img').addEventListener("click", function () {
+        document.getElementById('sync_img').addEventListener("click", function () {
         if (pro_img=='') {
           alert('请同步产品图！')
           return false
@@ -168,59 +199,74 @@
           canvas.moveTo(oImg, canvas.getObjects().length-1);
         });
 
-      });
+        });
 
         //   拉取默认场景图
-      window.onload = function() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/deft_scene', true);
-        xhr.responseType = 'blob';
-        xhr.onload = function(e) {
-          if (this.status == 200) {
-            var blob = this.response;
-            var img = URL.createObjectURL(blob);
-            fabric.Image.fromURL(img, function (oImg) {
-              var canvasAspectRatio = canvas.width / canvas.height;
-              var imgAspectRatio = oImg.width / oImg.height;
-              var scaleFactor, left, top;
-
-              if (canvasAspectRatio > imgAspectRatio) {
-                scaleFactor = canvas.height / oImg.height;
-                left = (canvas.width - oImg.width * scaleFactor) / 2;
-                top = 0;
-              } else {
-                scaleFactor = canvas.width / oImg.width;
-                left = 0;
-                top = (canvas.height - oImg.height * scaleFactor) / 2;
-              }
-
-              oImg.set({
-                left: left,
-                top: top,
-                scaleX: scaleFactor,
-                scaleY: scaleFactor,
-                cornerSize: 0,
-              });
-
-              canvas.add(oImg).renderAll();
-              canvas.setActiveObject(oImg);
-              canvas.moveTo(oImg, canvas.getObjects().length-1);
-            });
-          }
+        window.onload = function() {
+            sceneImg()
         };
-        xhr.send();
-      };
 
-    //   场景和商品图合并完成，进行同步
-      document.getElementById('export-button').addEventListener("click", function () {
+        function sceneImg(type=1) {
+            var g_width = window.parent.document.querySelector('#g_width textarea');
+            var g_height = window.parent.document.querySelector('#g_height textarea');
+            console.info(g_width, g_height)
+
+
+            g_width.value = sizes[type].width
+            g_height.value = sizes[type].height
+            console.info(g_width, g_height)
+            console.info(g_width.value, g_height.value)
+            var event = new Event('input');
+            g_width.dispatchEvent(event);
+            g_height.dispatchEvent(event);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/deft_scene?type='+type, true);
+            xhr.responseType = 'blob';
+            xhr.onload = function(e) {
+              if (this.status == 200) {
+                var blob = this.response;
+                var img = URL.createObjectURL(blob);
+                fabric.Image.fromURL(img, function (oImg) {
+                  var canvasAspectRatio = canvas.width / canvas.height;
+                  var imgAspectRatio = oImg.width / oImg.height;
+                  var scaleFactor, left, top;
+
+                  if (canvasAspectRatio > imgAspectRatio) {
+                    scaleFactor = canvas.height / oImg.height;
+                    left = (canvas.width - oImg.width * scaleFactor) / 2;
+                    top = 0;
+                  } else {
+                    scaleFactor = canvas.width / oImg.width;
+                    left = 0;
+                    top = (canvas.height - oImg.height * scaleFactor) / 2;
+                  }
+
+                  oImg.set({
+                    left: left,
+                    top: top,
+                    scaleX: scaleFactor,
+                    scaleY: scaleFactor,
+                    cornerSize: 0,
+                  });
+                  //清空图层1
+                  canvas.remove(canvas.getObjects()[0]);
+                  canvas.add(oImg).renderAll();
+                  canvas.setActiveObject(oImg);
+                  canvas.moveTo(oImg, canvas.getObjects().length-1);
+                });
+              }
+            };
+            xhr.send();
+        }
+
+        //   场景和商品图合并完成，进行同步
+        document.getElementById('export-button').addEventListener("click", function () {
         var objects = canvas.getObjects();
         if (objects.length <= 1) {
           console.log("没有图层存在");
           alert('请同步产品图！')
           return false
         }
-        width=768
-        height=1024
         var link = document.createElement('a');
         var canvasToExport = document.createElement('canvas');
         var scaleFactor = width / height;
@@ -261,6 +307,8 @@
                         caption = response.caption.split(',')[0]
                         textarea.value = caption +','+ def_prompt;
                     }
+                    var event = new Event('input');
+                    textarea.dispatchEvent(event);
                     afterComm()
                 } else {
                     alert("请求失败")
@@ -269,17 +317,15 @@
             document.getElementById('loading').style.display = 'none';
           };
         }, 'image/png', 1);
-      });
+        });
 
-      document.getElementById('download-button').addEventListener("click", function () {
+        document.getElementById('download-button').addEventListener("click", function () {
         var objects = canvas.getObjects();
         if (objects.length <= 1) {
           console.log("没有图层存在");
           alert('请同步产品图！')
           return false
         }
-        width=768
-        height=1024
         var link = document.createElement('a');
         var canvasToExport = document.createElement('canvas');
         var scaleFactor = width / height;
@@ -303,9 +349,9 @@
           link.click();
         }, 'image/png', 1);
         afterComm(false)
-      });
+        });
 
-      canvas.on('object:modified', function (e) {
+        canvas.on('object:modified', function (e) {
         var modifiedObject = e.target;
         if (modifiedObject === canvas.getObjects()[1]) {
           var adjustedX = modifiedObject.left * 2;
@@ -314,8 +360,8 @@
           var adjustedHeight = modifiedObject.getScaledHeight();
           console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
         }
-      });
-      function afterComm(is_upload=true) {
+        });
+        function afterComm(is_upload=true) {
         if (pro_mask_img=='') {
           // todo
           var mask_image='/tmp/project_test.webp'
@@ -323,8 +369,6 @@
           var mask_image=pro_mask_img
         }
 
-        width=768
-        height=1024
         var link = document.createElement('a');
         var canvasToExport = document.createElement('canvas');
         var scaleFactor = width / height;
@@ -387,12 +431,12 @@
           link.download = 'second_layer.png';
           link.click();
         }, 'image/png', 1);
-      }
+        }
 
 
-      function exportSecondLayerWithMask() {}
+        function exportSecondLayerWithMask() {}
 
-      var observeDOM = (function(){
+        var observeDOM = (function(){
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver,
         eventListenerSupported = window.addEventListener;
 
@@ -409,22 +453,22 @@
             obj.addEventListener('DOMNodeRemoved', callback, false);
           }
         };
-      })();
+        })();
 
-      observeDOM( window.parent.document.getElementById('rmbg_box') ,function(){
-        var imgElements = window.parent.document.querySelectorAll('#rmbg_box img');
-        var imgElement1 = imgElements[0];
-        // var imgElement2 = imgElements[1];
-        console.info(imgElement1)
-        // console.info(imgElement2)
-        if(imgElement1 !== undefined) {
-            console.info(imgElement1.src)
-            // console.info(imgElement2.src)
-            pro_img = imgElement1.src
-            // pro_mask_img = imgElement2.src
-            console.log('An img element has been added under #rmbg_box');
-        }
-      });
+        observeDOM( window.parent.document.getElementById('rmbg_box') ,function(){
+            var imgElements = window.parent.document.querySelectorAll('#rmbg_box img');
+            var imgElement1 = imgElements[0];
+            // var imgElement2 = imgElements[1];
+            console.info(imgElement1)
+            // console.info(imgElement2)
+            if(imgElement1 !== undefined) {
+                console.info(imgElement1.src)
+                // console.info(imgElement2.src)
+                pro_img = imgElement1.src
+                // pro_mask_img = imgElement2.src
+                console.log('An img element has been added under #rmbg_box');
+            }
+        });
     </script>
   </body>
 </html>
