@@ -1,8 +1,55 @@
-from scripts.inpaint import run_inpaint
+from scripts.inpaint import run_inpaint, Inpainting
 from utils.utils import project_dir
+
+def inpaint3():
+    input_image = f'{project_dir}/test/input/inpaint/images/2.png'
+    input_lineart_image = f'{project_dir}/test/input/inpaint/linearts/2.png'
+    mask_image = f'{project_dir}/test/input/inpaint/masks/2.png'
+    ip = Inpainting(
+                # base_model="Uminosachi/realisticVisionV51_v51VAE-inpainting",
+                base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
+                controlnet=[
+                    {
+                        # 'model_path': 'lllyasviel/sd-controlnet-canny',
+                        # Please make sure to pass `low_cpu_mem_usage=False` and `device_map=None` if you want to randomly initialize those weights or else make sure your checkpoint file is correct.
+                        'low_cpu_mem_usage': False,
+                        'device_map': None,
+                        'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter-plus/',
+                        'scale': 0.55,
+                        'image': input_image
+                    },
+                    {
+                        'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
+                        'scale': 0.7,
+                        'image': input_lineart_image
+                    }
+                ]
+               )
+    ip.set_textual_inversion(
+        '/data/aigc/stable-diffusion-webui/embeddings/negative/realisticvision-negative-embedding.pt',
+        'realisticvision-negative-embedding',
+        'string_to_param'
+    )
+    ip.run_inpaint(
+        input_image=input_image,
+        mask_image=mask_image,
+        prompt="a bottle of oligosog beauty oil sitting on a table next to flowers and a vase with white flowers,(high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,",
+        n_prompt='realisticvision-negative-embedding',
+        ddim_steps=40,
+        cfg_scale=7.5,
+        seed=-1,
+        composite_chk=True,
+        # sampler_name="Euler a",
+        sampler_name="Euler a",
+        iteration_count=1
+        )
+
+
+
 
 
 # 原生sd和diffusers模型之间转换
+# python convert_original_stable_diffusion_to_diffusers.py  --checkpoint_path /data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/icbinpRelapseRC.zgS8.safetensors --dump_path /data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers/  --image_size 512 --prediction_type epsilon --from_safetensors
 # https://zhuanlan.zhihu.com/p/645757706
 def inpaint():
     # 输入图像
@@ -14,7 +61,7 @@ def inpaint():
 
     # prompt = 'a man in a suit and tie posing for a picture with his hands in his pockets and his shirt tucked into his waist,In front of the villa,(high_contrast:1.2), vivid photo effect, RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality'
     prompt = "a hand holding a bottle of skin care product in it's palm, hand101,folded fingers:1.6,fingers folded,folded fingers, (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality"
-    n_prompt = 'nsfw,(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4),(deformed, distorted, disfigured:1.3),poorly drawn,bad anatomy,wrong anatomy,extra limb,missing limb,floating limbs,disconnected limbs,mutation,mutated,ugly,disgusting,amputation'
+    n_prompt = 'realisticvision-negative-embedding'
     ddim_steps = 16
     cfg_scale = 7.5
     seed = -1
@@ -112,4 +159,4 @@ def inpaint2():
 
 
 if __name__ == "__main__":
-    inpaint2()
+    inpaint3()

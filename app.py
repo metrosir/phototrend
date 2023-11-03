@@ -150,7 +150,7 @@ def commodity_tab():
                             pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="comm_prompt",
                                                     value=prompt,
                                                     interactive=True)
-                            # pos_prompt.change(prompt_change, [pos_prompt])
+                            pos_prompt.change(prompt_change, [pos_prompt])
                             neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=3,
                                                     value=negative_prompt,
                                                     interactive=True)
