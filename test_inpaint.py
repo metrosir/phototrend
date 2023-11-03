@@ -1,7 +1,9 @@
 from scripts.inpaint import run_inpaint, Inpainting
 from utils.utils import project_dir
+import time
 
 def inpaint3():
+    strtime = time.strftime("%Y%m%d%H%M%S", time.localtime())
     input_image = f'{project_dir}/test/input/inpaint/images/2.png'
     input_lineart_image = f'{project_dir}/test/input/inpaint/linearts/2.png'
     mask_image = f'{project_dir}/test/input/inpaint/masks/2.png'
@@ -43,7 +45,8 @@ def inpaint3():
         sampler_name="Euler a",
         iteration_count=1
         )
-
+    endtime = time.strftime("%Y%m%d%H%M%S", time.localtime())
+    print(strtime, endtime)
 
 
 
