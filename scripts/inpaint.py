@@ -53,7 +53,6 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
         elif os.path.isfile(image):
             image = PIL.Image.open(image)
         else:
-            print(image)
             raise ValueError(
                 f"Incorrect path or url, URLs must start with `http://` or `https://`, and {image} is not a valid path"
             )
@@ -143,7 +142,7 @@ def run_inpaint(self, input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_
         else:
             torch_generator = torch.Generator(devices.device)
     pipe.text_encoder = None
-    print(input_image, mask_image)
+    # print(input_image, mask_image)
     init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
     width, height = init_image.size
 
@@ -257,7 +256,8 @@ class Inpainting:
                 contr_info.pop('model_path')
 
                 self.controlnet.append(
-                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
+                    # ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
+                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
                 )
             return self.pipe
         raise ValueError("Controlnet is empty")
@@ -310,7 +310,8 @@ class Inpainting:
             # else:
             #     print(f"devices.device:{devices.device}")
             #     self.pipe = self.pipe.to(devices.device)
-            self.pipe = self.pipe.to('cuda')
+            self.pipe.enable_model_cpu_offload()
+            # self.pipe = self.pipe.to('cuda')
             if shared.xformers:
                 ia_logging.info("Enable xformers memory efficient attention")
                 self.pipe.enable_xformers_memory_efficient_attention()

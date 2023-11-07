@@ -16,3 +16,21 @@ generate_mode = {
     sd_mode: sd_mode,
     self_innovate_mode: self_innovate_mode,
 }
+
+# 作图模式对应的权重
+mode_params = {
+    sd_mode: {
+        'inpaint_weight': 0.5,
+        'ip-adapter_weight': 0.55,
+        'lineart_weight': 0.7,
+        'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,<lora:add_detail:1>',
+        'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
+    },
+    self_innovate_mode: {
+        'inpaint_weight': 0.75,
+        'ip-adapter_weight': 0.75,
+        'lineart_weight': 0.7,
+        'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
+        'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
+    }
+}

@@ -9,6 +9,7 @@ from utils.req import generate_image, prompt, negative_prompt, negative_prompt_c
 import utils.image as image_utils
 from utils.cmd_args import opts as cmd_opts
 import utils.constant as constant
+from utils.utils import project_dir
 
 import api.api as Api
 import time
@@ -89,7 +90,10 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             pathlib.Path(generate_image_sub_dir).mkdir(parents=True, exist_ok=True)
         comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
         # comm_merge_scene_mask_im = f'{datadir.merge_after_mask_image_dir}/{datadir.get_file_idx()}.png'
-        merge_after_mask_cut_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
+        mask_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
+        # mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
+        # comm_merge_scene_im= f'{project_dir}/test/input/inpaint/images/2.png'
+        # mask_im = f'{project_dir}/test/input/inpaint/masks/2.png'
 
         ip = Inpainting(
             base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
@@ -106,7 +110,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
                     'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
                     'scale': contr_lin_weight,
                     'device_map': None,
-                    'image': lineart_image(input_image=merge_after_mask_cut_im, width=width)
+                    'image': lineart_image(input_image=comm_merge_scene_im, width=width)
                 }
             ]
         )
@@ -117,13 +121,13 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         )
         return ip.run_inpaint(
             input_image=comm_merge_scene_im,
-            mask_image=merge_after_mask_cut_im,
-            prompt=prompt,
+            mask_image=mask_im,
+            prompt=pos_prompt,
             n_prompt=neg_prompt,
             ddim_steps=40,
             cfg_scale=7.5,
             seed=-1,
-            composite_chk=False,
+            composite_chk=True,
             # sampler_name="Euler a",
             sampler_name="UniPC",
             iteration_count=batch_count,
@@ -209,15 +213,16 @@ def commodity_tab():
                                                                    interactive=True).style(width=50)
                                     with gr.Column():
                                         mode = gr.Radio(label='作图方式(Mode)', choices=constant.generate_mode, type="value", value=constant.generate_mode[constant.self_innovate_mode], interactive=True)
+
                             def prompt_change(val):
                                 return gr.Textbox.update(value=val)
 
                             pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=2, elem_id="comm_prompt",
-                                                    value=prompt,
+                                                    value=constant.mode_params[constant.self_innovate_mode]['prompt'],
                                                     interactive=True)
-                            pos_prompt.change(prompt_change, [pos_prompt])
+                            pos_prompt.change(fn=prompt_change, inputs=[pos_prompt], outputs=[pos_prompt])
                             neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=2,
-                                                    value=negative_prompt,
+                                                    value=constant.mode_params[constant.self_innovate_mode]['negative_prompt'],
                                                     interactive=True)
 
                             def g_wh_change(size):
@@ -239,11 +244,21 @@ def commodity_tab():
                                                          interactive=True).style(width=50)
                             gr.Markdown('ControlNet')
                             contr_inp_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Inpaint weight',
-                                                         value=0.5, elem_id="inpaint_weight")
+                                                         value=constant.mode_params[constant.self_innovate_mode]['inpaint_weight'], elem_id="inpaint_weight")
                             contr_ipa_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='IP-Adapter weight',
-                                                         value=0.55, elem_id="ip_adapter_weight")
+                                                         value=constant.mode_params[constant.self_innovate_mode]['ip-adapter_weight'], elem_id="ip_adapter_weight")
                             contr_lin_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Lineart weight',
-                                                         value=0.7, elem_id="lineart_weight")
+                                                         value=constant.mode_params[constant.self_innovate_mode]['lineart_weight'], elem_id="lineart_weight")
+
+                            def mode_change(val):
+                                print("mode_change_val:", val)
+                                return gr.Slider.update(value=constant.mode_params[val]['inpaint_weight']),\
+                                    gr.Slider.update(value=constant.mode_params[val]['ip-adapter_weight']), \
+                                    gr.Slider.update(value=constant.mode_params[val]['lineart_weight']),\
+                                    gr.Textbox.update(value=constant.mode_params[val]['prompt']), \
+                                    gr.Textbox.update(value=constant.mode_params[val]['negative_prompt'])
+
+                            mode.change(fn=mode_change, inputs=[mode], outputs=[contr_inp_weight, contr_ipa_weight, contr_lin_weight, pos_prompt, neg_prompt], queue=False)
                             generate_type = gr.Text(value=1, visible=False, elem_id="generate_type")
                     run_generate = gr.Button('开始制作(Generate)')
             with gr.Box():
