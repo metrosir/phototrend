@@ -67,11 +67,11 @@ def save_webp_image_with_transparency(image_path, save_path):
         return True
     return False
 
-# 写一个用 numpy 读取图片的函数
 def read_image_to_np(image_path):
     image = Image.open(image_path)
     image = np.array(image)
     return image
+
 
 def auto_resize_to_pil(input_image, mask_image):
     init_image = Image.fromarray(input_image).convert("RGB")
@@ -99,3 +99,21 @@ def auto_resize_to_pil(input_image, mask_image):
             mask_image = transforms.functional.center_crop(mask_image, (new_height, new_width))
 
     return init_image, mask_image
+
+
+def mask_invert(mask_img, mask_img_invert):
+    # pip install Pillow
+    from PIL import Image
+    # pip install numpy
+    import numpy as np
+
+    # 打开图片
+    img = Image.open(mask_img).convert('L')
+    # 将图片转换为numpy数组
+    img_np = np.array(img)
+    # 对图片进行反转
+    img_np = 255 - img_np
+    # 将反转后的numpy数组转回图片
+    img_inverted = Image.fromarray(img_np)
+    # 保存反转后的图片
+    img_inverted.save(mask_img_invert)

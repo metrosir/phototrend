@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from typing import Optional
 import os
 import pathlib
-from utils.image import convert_png_to_mask
+from utils.image import convert_png_to_mask, mask_invert,remove_bg
 import utils.datadir as datadir
 from utils.req import interrogate
 from utils.utils import project_dir
@@ -38,6 +38,7 @@ class Api:
             pathlib.Path(datadir.commodity_merge_scene_image_dir).mkdir(parents=True, exist_ok=True)
             pathlib.Path(datadir.merge_after_mask_image_dir).mkdir(parents=True, exist_ok=True)
             pathlib.Path(datadir.mask_image_dir).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(datadir.merge_after_mask_cut_image_dir).mkdir(parents=True, exist_ok=True)
 
         # 制作mask
         if img_type == 2:
@@ -45,10 +46,16 @@ class Api:
                 contents = file.file.read()
                 after_mask_path = f'{datadir.merge_after_mask_image_dir}/{datadir.get_file_idx()}.png'
                 mask_path = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
+                merge_after_mask_cut_image_dir = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
                 with open(after_mask_path, 'wb') as f:
                     f.write(contents)
 
                 convert_png_to_mask(after_mask_path, mask_path)
+                mask_invert(mask_path, merge_after_mask_cut_image_dir)
+                # remove_bg(after_mask_path, mask_path, True, False)
+                # mask_invert(mask_path, after_mask_path)
+
+                # convert_png_to_mask(mask_path, after_mask_path)
             except Exception as e:
                 error_message = str(e)
                 return {"data": f"{mask_path}, type:{img_type}, error:{error_message}"}

@@ -12,6 +12,7 @@ import utils.constant as constant
 
 import api.api as Api
 import time
+from PIL import Image
 
 
 def rmbg(image, is_result=False) -> str:
@@ -25,19 +26,11 @@ def rmbg(image, is_result=False) -> str:
     commodity_rembg_mask_image_path = f'{datadir.commodity_rembg_mask_image_dir}/{datadir.get_file_idx(True)}.png'
 
     if is_result:
-        with open(image, 'rb') as f:
-            content = f.read()
-            with open(commodity_image_path, 'wb') as ff:
-                ff.write(content)
-                ff.close()
-            with open(commodity_rembg_image_path, 'wb') as ffs:
-                ffs.write(content)
-                ffs.close()
+        image.save(commodity_image_path)
+        image.save(commodity_rembg_image_path)
         return [commodity_rembg_image_path]
     else:
-        with open(image, 'rb') as f:
-            with open(commodity_image_path, 'wb') as ff:
-                ff.write(f.read())
+        image.save(commodity_image_path)
         image_utils.remove_bg(commodity_image_path, commodity_rembg_image_path)
 
         return [commodity_rembg_image_path]
@@ -59,10 +52,13 @@ def dir_uuid():
 
 
 def refresh_history_img(type=1):
-    if type==1:
+    if int(type)==1:
         dirs = datadir.generate_glob_img
+    elif int(type)==3:
+        dirs = datadir.generate_self_innovate_glob_img
     else:
         dirs = datadir.clothes_generate_glob_img
+    print("dirs:", dirs)
     return glob.glob(dirs)
 
 
@@ -74,6 +70,69 @@ def upload_rem_img_result(img):
     # output_images.update(value=path)
     return gr.Gallery.update(value=path, visible=True)
     # return gr.Gallery.update(value=path[0], visible=True)
+
+
+def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height):
+    if mode not in constant.generate_mode:
+        raise Exception("mode not in constant.generate_mode")
+    if mode == constant.sd_mode:
+        return generate_image(select_model, select_vae, pos_prompt, neg_prompt, batch_count,
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height)
+    else:
+        print("batch_count:", batch_count)
+        from scripts.inpaint import run_inpaint, Inpainting
+        from scripts.piplines.controlnet_pre import lineart_image
+        idx = datadir.get_file_idx(check_dir=datadir.commodity_merge_scene_image_dir)
+        generate_image_sub_dir = datadir.generate_self_innovate_image_dir.format(uuid=datadir.uuid, idx=idx)
+        if not pathlib.Path(generate_image_sub_dir).exists():
+            pathlib.Path(generate_image_sub_dir).mkdir(parents=True, exist_ok=True)
+        comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
+        # comm_merge_scene_mask_im = f'{datadir.merge_after_mask_image_dir}/{datadir.get_file_idx()}.png'
+        merge_after_mask_cut_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
+
+        ip = Inpainting(
+            base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
+            controlnet=[
+                {
+                    'low_cpu_mem_usage': False,
+                    'device_map': None,
+                    'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter-plus/',
+                    'scale': contr_ipa_weight,
+                    'image': comm_merge_scene_im
+                },
+                {
+                    'low_cpu_mem_usage': False,
+                    'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
+                    'scale': contr_lin_weight,
+                    'device_map': None,
+                    'image': lineart_image(input_image=merge_after_mask_cut_im, width=width)
+                }
+            ]
+        )
+        ip.set_textual_inversion(
+            '/data/aigc/stable-diffusion-webui/embeddings/negative/realisticvision-negative-embedding.pt',
+            'realisticvision-negative-embedding',
+            'string_to_param'
+        )
+        return ip.run_inpaint(
+            input_image=comm_merge_scene_im,
+            mask_image=merge_after_mask_cut_im,
+            prompt=prompt,
+            n_prompt=neg_prompt,
+            ddim_steps=40,
+            cfg_scale=7.5,
+            seed=-1,
+            composite_chk=False,
+            # sampler_name="Euler a",
+            sampler_name="UniPC",
+            iteration_count=batch_count,
+            width=(int(width)//8)*8,
+            height=(int(height)//8)*8,
+            strength=contr_inp_weight,
+            eta=31337,
+            output=generate_image_sub_dir
+        )
 
 
 history_dirs = datadir.get_history_dirs()
@@ -101,6 +160,9 @@ if vae_models:
             commodity_def_vae_idx = idx
 
 print("vae_models_title:", vae_models_title)
+
+
+
 def commodity_tab():
     with gr.Blocks() as G:
         with gr.Blocks() as commodity:
@@ -122,7 +184,7 @@ def commodity_tab():
                         with gr.Row():
                             with gr.Column():
                                 gr.Markdown('上传图片(Upload image)')
-                                result_rm_img = gr.Image(type='filepath').style(height=300)
+                                result_rm_img = gr.Image(type='pil', image_mode='RGBA').style(height=300)
                         with gr.Row():
                             result_rm_img_but = gr.Button('上传(Upload)')
                             result_rm_img_but.click(fn=upload_rem_img_result, inputs=[result_rm_img], outputs=[output_images])
@@ -139,29 +201,32 @@ def commodity_tab():
                     with gr.Tabs():
                         with gr.TabItem("参数(Params)"):
                             with gr.Box():
-                                select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
-                                                           elem_id="select_model_list",
-                                                           value=models_title[commodity_def_model_idx],
-                                                           interactive=True).style(width=50)
+                                with gr.Row():
+                                    with gr.Column():
+                                        select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
+                                                                   elem_id="select_model_list",
+                                                                   value=models_title[commodity_def_model_idx],
+                                                                   interactive=True).style(width=50)
+                                    with gr.Column():
+                                        mode = gr.Radio(label='作图方式(Mode)', choices=constant.generate_mode, type="value", value=constant.generate_mode[constant.self_innovate_mode], interactive=True)
                             def prompt_change(val):
-                                print(2222)
                                 return gr.Textbox.update(value=val)
 
-                            pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="comm_prompt",
+                            pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=2, elem_id="comm_prompt",
                                                     value=prompt,
                                                     interactive=True)
                             pos_prompt.change(prompt_change, [pos_prompt])
-                            neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=3,
+                            neg_prompt = gr.Textbox(label="负向提示语(Negative Prompt)", lines=2,
                                                     value=negative_prompt,
                                                     interactive=True)
 
                             def g_wh_change(size):
                                 return gr.Text.update(value=size)
                             g_width = gr.Text(elem_id="g_width",
-                                              value=768, visible=True, interactive=True)
+                                              value=768, visible=False, interactive=True)
                             g_width.change(g_wh_change, [g_width])
                             g_height = gr.Text(elem_id="g_height",
-                                               value=1024, visible=True, interactive=True)
+                                               value=1024, visible=False, interactive=True)
                             g_height.change(g_wh_change, [g_height])
                             with gr.Box():
                                 batch_count = gr.Slider(minimum=1, step=1, label='生成数量(Batch count)', value=1,
@@ -195,15 +260,21 @@ def commodity_tab():
                                 with gr.Row():
                                     with gr.Column():
                                         total_history = gr.Button('刷新(Refresh)').style(height=10)
-                                history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                        history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                    with gr.Column():
+                                        self_innovate_history = gr.Button('刷新(Refresh)').style(height=10)
+                                        self_innovate_history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                        g_type = gr.Textbox(value=3, visible=False)
+
 
             output_message = gr.Markdown()
 
-            run_generate.click(fn=generate_image,
-                               inputs=[select_model, select_vae, pos_prompt, neg_prompt, batch_count,
+            run_generate.click(fn=generate,
+                               inputs=[mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
                                        contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, g_width, g_height],
                                outputs=[output_generate_images])
             total_history.click(fn=refresh_history_img, outputs=[history_imgs])
+            self_innovate_history.click(fn=refresh_history_img, inputs=[g_type], outputs=[self_innovate_history_imgs])
 
         return G
 

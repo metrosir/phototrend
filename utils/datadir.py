@@ -39,6 +39,8 @@ merge_after_mask_cut_image_dir = history + '/{uuid}/merge_after_mask_cut_image'.
 # generate 的图片
 generate_image_dir = history + '/{uuid}/generate_image/{idx}'
 generate_glob_img = history + '/*/generate_image/*/*.png'
+generate_self_innovate_image_dir = history + '/{uuid}/generate_self_innovate_image/{idx}'
+generate_self_innovate_glob_img = history + '/*/generate_self_innovate_image/*/*.png'
 
 
 

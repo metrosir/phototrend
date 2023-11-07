@@ -1,15 +1,22 @@
 from scripts.inpaint import run_inpaint, Inpainting
+from scripts.piplines.controlnet_pre import lineart_image
 from utils.utils import project_dir
 import time
+import sys
+from PIL import Image
+from io import BytesIO
+import numpy as np
+
 
 def inpaint3():
     strtime = time.strftime("%Y%m%d%H%M%S", time.localtime())
     input_image = f'{project_dir}/test/input/inpaint/images/2.png'
-    input_lineart_image = f'{project_dir}/test/input/inpaint/linearts/2.png'
+    width = 768
+    height = 1024
     mask_image = f'{project_dir}/test/input/inpaint/masks/2.png'
     ip = Inpainting(
-                # base_model="Uminosachi/realisticVisionV51_v51VAE-inpainting",
                 base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
+                # base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/diffusers/",
                 controlnet=[
                     {
                         # 'model_path': 'lllyasviel/sd-controlnet-canny',
@@ -21,14 +28,18 @@ def inpaint3():
                         'image': input_image
                     },
                     {
+                        'low_cpu_mem_usage': False,
                         'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
+                        # 'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart/',
                         'scale': 0.7,
-                        'image': input_lineart_image
+                        'device_map': None,
+                        'image': lineart_image(input_image=input_image, width=width)
                     }
                 ]
                )
     ip.set_textual_inversion(
         '/data/aigc/stable-diffusion-webui/embeddings/negative/realisticvision-negative-embedding.pt',
+        # '/data/aigc/stable-diffusion-webui/embeddings/realisticvision-negative-embedding.pt',
         'realisticvision-negative-embedding',
         'string_to_param'
     )
@@ -36,14 +47,18 @@ def inpaint3():
         input_image=input_image,
         mask_image=mask_image,
         prompt="a bottle of oligosog beauty oil sitting on a table next to flowers and a vase with white flowers,(high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,",
-        n_prompt='realisticvision-negative-embedding',
+        n_prompt='(human:1.2),realisticvision-negative-embedding',
         ddim_steps=40,
         cfg_scale=7.5,
         seed=-1,
         composite_chk=True,
-        # sampler_name="Euler a",
         sampler_name="Euler a",
-        iteration_count=1
+        # sampler_name="DPM2 a Karras",
+        iteration_count=1,
+        width=768,
+        height=1024,
+        strength=0.5,
+        eta=31337,
         )
     endtime = time.strftime("%Y%m%d%H%M%S", time.localtime())
     print(strtime, endtime)
@@ -162,4 +177,26 @@ def inpaint2():
 
 
 if __name__ == "__main__":
-    inpaint3()
+    img_path = '/data1/aigc/phototrend/worker_data/history/1849af04/merge_after_mask_image/0.png'
+
+
+    def mask_invert(mask_img, mask_img_invert):
+        # pip install Pillow
+        from PIL import Image
+        # pip install numpy
+        import numpy as np
+
+        # 打开图片
+        img = Image.open(mask_img).convert('L')
+        # 将图片转换为numpy数组
+        img_np = np.array(img)
+        # 对图片进行反转
+        img_np = 255 - img_np
+        # 将反转后的numpy数组转回图片
+        img_inverted = Image.fromarray(img_np)
+        # 保存反转后的图片
+        img_inverted.save(mask_img_invert)
+
+
+    mask_invert(img_path, )
+    # inpaint3()

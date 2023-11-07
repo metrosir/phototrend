@@ -28,7 +28,7 @@ import gradio as gr
 import numpy as np
 import torch
 from utils.pt_logging import ia_logging
-from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler,
+from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler,UniPCMultistepScheduler,
                        KDPM2AncestralDiscreteScheduler, KDPM2DiscreteScheduler,
                        StableDiffusionInpaintPipeline, StableDiffusionControlNetInpaintPipeline, ControlNetModel)
 
@@ -116,6 +116,8 @@ def run_inpaint(self, input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_
         pipe.scheduler = KDPM2DiscreteScheduler.from_config(pipe.scheduler.config)
     elif sampler_name == "DPM2 a Karras":
         pipe.scheduler = KDPM2AncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+    elif sampler_name == "UniPC":
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
     else:
         ia_logging.info("Sampler fallback to DDIM")
         pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
@@ -140,7 +142,7 @@ def run_inpaint(self, input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_
             torch_generator = torch.Generator(devices.cpu)
         else:
             torch_generator = torch.Generator(devices.device)
-
+    pipe.text_encoder = None
     print(input_image, mask_image)
     init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
     width, height = init_image.size
@@ -255,7 +257,7 @@ class Inpainting:
                 contr_info.pop('model_path')
 
                 self.controlnet.append(
-                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
+                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
                 )
             return self.pipe
         raise ValueError("Controlnet is empty")
@@ -273,6 +275,8 @@ class Inpainting:
                 )
         elif sampler_name == "DPM2 Karras":
             self.pipe.scheduler = KDPM2DiscreteScheduler.from_config(self.pipe.scheduler.config)
+        elif sampler_name == "UniPC":
+            self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
         elif sampler_name == "DPM2 a Karras":
             self.pipe.scheduler = KDPM2AncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
         else:
@@ -283,7 +287,7 @@ class Inpainting:
     def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
-                    ddim_steps, cfg_scale, seed, composite_chk, sampler_name="DDIM", iteration_count=1):
+                    ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1):
 
         input_image = read_image_to_np(input_image)
         mask_image = read_image_to_np(mask_image)
@@ -299,24 +303,29 @@ class Inpainting:
             self.pipe.enable_attention_slicing()
             torch_generator = torch.Generator(devices.cpu)
         else:
-            if ia_check_versions.diffusers_enable_cpu_offload() and devices.device != devices.cpu:
-                ia_logging.info("Enable model cpu offload")
-                self.pipe.enable_model_cpu_offload()
-            else:
-                pipe = self.pipe.to(devices.device)
+            # print(f"devices.device.start:{devices.device}")
+            # if ia_check_versions.diffusers_enable_cpu_offload() and devices.device != devices.cpu:
+            #     ia_logging.info("Enable model cpu offload")
+            #     self.pipe.enable_model_cpu_offload()
+            # else:
+            #     print(f"devices.device:{devices.device}")
+            #     self.pipe = self.pipe.to(devices.device)
+            self.pipe = self.pipe.to('cuda')
             if shared.xformers:
                 ia_logging.info("Enable xformers memory efficient attention")
                 self.pipe.enable_xformers_memory_efficient_attention()
             else:
                 ia_logging.info("Enable attention slicing")
                 self.pipe.enable_attention_slicing()
-            if "privateuseone" in str(getattr(devices.device, "type", "")):
-                torch_generator = torch.Generator(devices.cpu)
-            else:
-                torch_generator = torch.Generator(devices.device)
+            # if "privateuseone" in str(getattr(devices.device, "type", "")):
+            #     torch_generator = torch.Generator(devices.cpu)
+            # else:
+            #     torch_generator = torch.Generator(devices.device)
+            torch_generator = torch.Generator("cuda")
 
         init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
-        width, height = init_image.size
+        if width is None or height is None:
+            width, height = init_image.size
 
         output_list = []
         iteration_count = iteration_count if iteration_count is not None else 1
@@ -339,8 +348,8 @@ class Inpainting:
                 "guidance_scale": cfg_scale,
                 "negative_prompt": n_prompt,
                 "generator": generator,
-                "strength": 0.5,
-                "eta": 0.1,
+                "strength": strength,
+                "eta": eta,
             }
 
             print(f"pipe_args_dict:{pipe_args_dict}")
@@ -368,14 +377,15 @@ class Inpainting:
             metadata.add_text("parameters", infotext)
 
             # save_name = "_".join([ia_file_manager.savename_prefix, os.path.basename(inp_model_id), str(seed)]) + ".png"
-            img_idx = len(os.listdir(generate_inpaint_image_dir))
+            img_idx = len(os.listdir(output))
 
             # save_name = generate_inpaint_image_dir + f"{img_idx}.png"
-            save_name=os.path.join(generate_inpaint_image_dir, f"{img_idx}.png")
+            save_name=os.path.join(output, f"{img_idx}.png")
             # save_name = os.path.join(ia_file_manager.outputs_dir, save_name)
             output_image.save(save_name, pnginfo=metadata)
 
             output_list.append(output_image)
 
-            return output_list, max([1, iteration_count - (count + 1)])
+        return output_list
+            # return output_list, max([1, iteration_count - (count + 1)])
 

@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="transformers")
 
-ia_logging = logging.getLogger("Inpaint Anything")
+ia_logging = logging.getLogger("PhotoTrend")
 ia_logging.setLevel(logging.INFO)
 ia_logging.propagate = False
 
