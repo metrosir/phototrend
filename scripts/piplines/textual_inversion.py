@@ -1,11 +1,13 @@
 from diffusers import (StableDiffusionControlNetInpaintPipeline, ControlNetModel)
 
 
-def load(pipe, model_id, token: str, weight_name: str):
+def load(pipe, model_id, token: str, weight_name: str, subfolder: str = None):
+
     pipe = pipe.load_textual_inversion(
         pretrained_model_name_or_path=model_id,
         token=token,
         weight_name=weight_name,
+        subfolder=subfolder,
         # torch_dtype=torch_dtype,
     )
     return pipe

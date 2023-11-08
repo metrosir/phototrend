@@ -32,6 +32,9 @@ from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDisc
                        KDPM2AncestralDiscreteScheduler, KDPM2DiscreteScheduler,
                        StableDiffusionInpaintPipeline, StableDiffusionControlNetInpaintPipeline, ControlNetModel)
 
+from transformers import logging as transformers_logging
+transformers_logging.set_verbosity_warning()
+
 
 
 
@@ -66,9 +69,8 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     image = image.convert("RGB")
     return image
 
-def run_inpaint(self, input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale, seed, inp_model_id, composite_chk,
+def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale, seed, inp_model_id, composite_chk,
                 controlnets = [], sampler_name="DDIM", iteration_count=1):
-
     if platform.system() == "Darwin":
         torch_dtype = torch.float32
     else:
@@ -208,23 +210,32 @@ def run_inpaint(self, input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_
 
         return output_list, max([1, iteration_count - (count + 1)])
 
+gpipe=None
+
 
 class Inpainting:
 
-    def __init__(self, base_model, controlnet: list,):
+    def __init__(self, base_model, subfolder, controlnet: list,):
         self.pipe = None
         self.base_model = base_model
+        self.base_model_sub = subfolder
         self.controlnet_image = []
         self.controlnet_scale = []
 
         self.controlnet = []
-        self.local_files_only = True
+        self.local_files_only = False
         if platform.system() == "Darwin":
             self.torch_dtype = torch.float32
         else:
             self.torch_dtype = torch.float16
         self.set_controlnets(controlnet)
-        self.pipe = self.setup()
+        global gpipe
+        if gpipe is None:
+            self.pipe = self.setup()
+            gpipe = self.setup()
+        else:
+            self.pipe = gpipe
+
         self.pipe.safety_checker = None
         self.sampler_name = None
 
@@ -234,16 +245,18 @@ class Inpainting:
                 self.base_model,
                 torch_dtype=self.torch_dtype,
                 local_files_only=self.local_files_only,
-                controlnet=self.controlnet
+                controlnet=self.controlnet,
+                subfolder=self.base_model_sub,
             )
         except Exception as e:
             ia_logging.error(str(e))
             raise ValueError(str(e))
         return self.pipe
 
-    def set_textual_inversion(self, model_id, token, weight_name):
-        from .piplines.textual_inversion import load
-        load(pipe=self.pipe, model_id=model_id, token=token, weight_name=weight_name)
+    def set_textual_inversion(self, model_id, token, weight_name, subfolder=None):
+        if gpipe is None:
+            from .piplines.textual_inversion import load
+            load(pipe=self.pipe, model_id=model_id, token=token, weight_name=weight_name, subfolder=subfolder)
 
     def set_controlnets(self, controlnets):
         if len(controlnets) > 0:
@@ -254,11 +267,11 @@ class Inpainting:
                 contr_info.pop('image')
                 contr_info.pop('scale')
                 contr_info.pop('model_path')
-
-                self.controlnet.append(
-                    # ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
-                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
-                )
+                if gpipe is None:
+                    self.controlnet.append(
+                        # ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
+                        ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
+                    )
             return self.pipe
         raise ValueError("Controlnet is empty")
 
@@ -310,8 +323,9 @@ class Inpainting:
             # else:
             #     print(f"devices.device:{devices.device}")
             #     self.pipe = self.pipe.to(devices.device)
-            self.pipe.enable_model_cpu_offload()
-            # self.pipe = self.pipe.to('cuda')
+            # todo 这里需要注意，如果使用gpipe 需要使用.to("cuda")
+            # self.pipe.enable_model_cpu_offload()
+            self.pipe = self.pipe.to('cuda')
             if shared.xformers:
                 ia_logging.info("Enable xformers memory efficient attention")
                 self.pipe.enable_xformers_memory_efficient_attention()

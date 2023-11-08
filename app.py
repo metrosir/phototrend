@@ -96,18 +96,26 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         # mask_im = f'{project_dir}/test/input/inpaint/masks/2.png'
 
         ip = Inpainting(
-            base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
+            # base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
+            base_model='metrosir/realistic',
+            subfolder=None,
             controlnet=[
                 {
                     'low_cpu_mem_usage': False,
                     'device_map': None,
-                    'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter-plus/',
+                    # 'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter-plus/',
+                    'model_path': 'metrosir/phototrend',
+                    "subfolder": 'controlnets/ip-adapter-plus',
+                    # 'model_path': 'InvokeAI/ip_adapter_plus_sd15',
                     'scale': contr_ipa_weight,
-                    'image': comm_merge_scene_im
+                    'image': comm_merge_scene_im,
+                    'local_files_only': False
                 },
                 {
                     'low_cpu_mem_usage': False,
-                    'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
+                    # 'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
+                    'model_path': 'metrosir/phototrend',
+                    'subfolder': 'controlnets/lineart-fp16',
                     'scale': contr_lin_weight,
                     'device_map': None,
                     'image': lineart_image(input_image=comm_merge_scene_im, width=width)
@@ -115,9 +123,10 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             ]
         )
         ip.set_textual_inversion(
-            '/data/aigc/stable-diffusion-webui/embeddings/negative/realisticvision-negative-embedding.pt',
+            f'{project_dir}/models/textual_inversion/negative_prompt/realisticvision-negative-embedding.pt',
+            # 'metrosir/phototrend',
             'realisticvision-negative-embedding',
-            'string_to_param'
+            'string_to_param',
         )
         return ip.run_inpaint(
             input_image=comm_merge_scene_im,

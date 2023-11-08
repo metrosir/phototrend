@@ -177,26 +177,12 @@ def inpaint2():
 
 
 if __name__ == "__main__":
-    img_path = '/data1/aigc/phototrend/worker_data/history/1849af04/merge_after_mask_image/0.png'
+    # from diffusers import ControlNetModel, StableDiffusionControlNetPipeline
+    from diffusers import StableDiffusionControlNetInpaintPipeline
+    pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained("Uminosachi/realisticVisionV51_v51VAE-inpainting", cache_dir='/tmp/rs/', local_files_only=False)
+    # import torch
 
+    # controlnet = ControlNetModel.from_pretrained("metrosir/phototrend", local_files_only=False, subfolder="controlnets/ip-adapter-plus")
+    # controlnet = ControlNetModel.from_pretrained("metrosir/ip-adapter-plus", local_files_only=False)
 
-    def mask_invert(mask_img, mask_img_invert):
-        # pip install Pillow
-        from PIL import Image
-        # pip install numpy
-        import numpy as np
-
-        # 打开图片
-        img = Image.open(mask_img).convert('L')
-        # 将图片转换为numpy数组
-        img_np = np.array(img)
-        # 对图片进行反转
-        img_np = 255 - img_np
-        # 将反转后的numpy数组转回图片
-        img_inverted = Image.fromarray(img_np)
-        # 保存反转后的图片
-        img_inverted.save(mask_img_invert)
-
-
-    mask_invert(img_path, )
     # inpaint3()
