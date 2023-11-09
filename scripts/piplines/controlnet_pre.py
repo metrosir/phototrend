@@ -86,11 +86,11 @@ def lineart(img, res=512, **kwargs):
 def lineart_image(input_image, width):
     from io import BytesIO
     from PIL import Image
-    # from utils.utils import project_dir
-    img = Image.open(BytesIO(open(input_image, 'rb').read())).convert("RGB")
+    if type(input_image) is str:
+        input_image = Image.open(BytesIO(open(input_image, 'rb').read())).convert("RGB")
     # width, height = img.size
-    img, x = lineart(img, res=width)
-    img = img.astype(np.uint8)
-    img = Image.fromarray(img)
+    input_image, x = lineart(input_image, res=width)
+    input_image = input_image.astype(np.uint8)
+    input_image = Image.fromarray(input_image)
     # image.save(f'{project_dir}/test/input/inpaint/linearts/2_test1.png')
-    return img
+    return input_image

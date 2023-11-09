@@ -1,5 +1,5 @@
 
-from PIL import Image
+from PIL import Image, PngImagePlugin
 import base64
 from rembg import remove
 from utils.pt_logging import ia_logging
@@ -117,3 +117,49 @@ def mask_invert(mask_img, mask_img_invert):
     img_inverted = Image.fromarray(img_np)
     # 保存反转后的图片
     img_inverted.save(mask_img_invert)
+
+
+from io import BytesIO
+import io
+
+
+def decode_base64_to_image(encoding):
+    if encoding.startswith("data:image/"):
+        encoding = encoding.split(";")[1].split(",")[1]
+
+    image = Image.open(BytesIO(base64.b64decode(encoding))).convert("RGB")
+
+    # image = np.array(image)
+    return image
+
+
+def encode_pil_to_base64(image):
+    with io.BytesIO() as output_bytes:
+
+        use_metadata = False
+        metadata = PngImagePlugin.PngInfo()
+        for key, value in image.info.items():
+            if isinstance(key, str) and isinstance(value, str):
+                metadata.add_text(key, value)
+                use_metadata = True
+        image.save(output_bytes, format="PNG", pnginfo=(metadata if use_metadata else None), quality=100)
+
+        bytes_data = output_bytes.getvalue()
+
+    return base64.b64encode(bytes_data)
+
+
+def encode_np_to_base64(image):
+    pil = Image.fromarray(image)
+    return encode_pil_to_base64(pil)
+
+
+def encode_to_base64(image):
+    if type(image) is str:
+        return image
+    elif type(image) is Image.Image:
+        return encode_pil_to_base64(image)
+    elif type(image) is np.ndarray:
+        return encode_np_to_base64(image)
+    else:
+        return ""

@@ -51,7 +51,11 @@ def interrogate(image_path):
     return None
 
 def sd_models():
-    response_data = requestsd(api_sd_models, data={}, method='get')
+    try:
+        response_data = requestsd(api_sd_models, data={}, method='get')
+    except Exception as e:
+        print("requests error:", str(e))
+        return None
 
     if response_data is not False:
         return response_data
@@ -59,7 +63,11 @@ def sd_models():
 
 
 def sd_vae():
-    response_data = requestsd(api_sd_vae, data={}, method='get')
+    try:
+        response_data = requestsd(api_sd_vae, data={}, method='get')
+    except Exception as e:
+        print("requests error:", str(e))
+        return None
     if response_data is not False:
         response_data.insert(0, {'model_name': 'Automatic', 'filename': ''})
         response_data.insert(1, {'model_name': 'None', 'filename': ''})

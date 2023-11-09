@@ -7,12 +7,13 @@ import PIL.ImageOps
 import requests
 from typing import Union
 from utils.cmd_args import opts as shared
-from utils.image import auto_resize_to_pil, read_image_to_np
+from utils.image import auto_resize_to_pil, read_image_to_np, encode_to_base64
 from utils.datadir import generate_inpaint_image_dir
 import scripts.devices as devices
 
 from PIL import Image, ImageFilter, ImageOps
 from PIL.PngImagePlugin import PngInfo
+
 
 if platform.system() == "Darwin":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -34,6 +35,8 @@ from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDisc
 
 from transformers import logging as transformers_logging
 transformers_logging.set_verbosity_warning()
+import warnings
+warnings.filterwarnings("ignore", message="Some weights of the model checkpoint at metrosir/phototrend were not used when initializing ControlNetModel: ['ip_adapter', 'image_proj']")
 
 
 
@@ -68,6 +71,7 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     image = PIL.ImageOps.exif_transpose(image)
     image = image.convert("RGB")
     return image
+
 
 def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale, seed, inp_model_id, composite_chk,
                 controlnets = [], sampler_name="DDIM", iteration_count=1):
@@ -268,10 +272,12 @@ class Inpainting:
                 contr_info.pop('scale')
                 contr_info.pop('model_path')
                 if gpipe is None:
+                    print(1111111111)
                     self.controlnet.append(
                         # ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
                         ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
                     )
+                    print(222222222)
             return self.pipe
         raise ValueError("Controlnet is empty")
 
@@ -302,27 +308,25 @@ class Inpainting:
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1):
 
-        input_image = read_image_to_np(input_image)
-        mask_image = read_image_to_np(mask_image)
+        if not type(input_image) is np.ndarray:
+            if type(input_image) is str:
+                input_image = read_image_to_np(input_image)
+            if type(input_image) is Image.Image:
+                input_image = np.array(input_image)
+
+        if not type(mask_image) is np.ndarray:
+            if type(mask_image) is str:
+                mask_image = read_image_to_np(mask_image)
+            if type(mask_image) is Image.Image:
+                mask_image = np.array(mask_image)
+
 
         self.set_scheduler(sampler_name)
-        # self.set_textual_inversion(
-        #     '/data/aigc/stable-diffusion-webui/embeddings/negative/realisticvision-negative-embedding.pt',
-        #     'realisticvision-negative-embedding',
-        #     'string_to_param'
-        # )
         if platform.system() == "Darwin":
             self.pipe = self.pipe.to("mps" if ia_check_versions.torch_mps_is_available else "cpu")
             self.pipe.enable_attention_slicing()
             torch_generator = torch.Generator(devices.cpu)
         else:
-            # print(f"devices.device.start:{devices.device}")
-            # if ia_check_versions.diffusers_enable_cpu_offload() and devices.device != devices.cpu:
-            #     ia_logging.info("Enable model cpu offload")
-            #     self.pipe.enable_model_cpu_offload()
-            # else:
-            #     print(f"devices.device:{devices.device}")
-            #     self.pipe = self.pipe.to(devices.device)
             # todo 这里需要注意，如果使用gpipe 需要使用.to("cuda")
             # self.pipe.enable_model_cpu_offload()
             self.pipe = self.pipe.to('cuda')
@@ -332,10 +336,6 @@ class Inpainting:
             else:
                 ia_logging.info("Enable attention slicing")
                 self.pipe.enable_attention_slicing()
-            # if "privateuseone" in str(getattr(devices.device, "type", "")):
-            #     torch_generator = torch.Generator(devices.cpu)
-            # else:
-            #     torch_generator = torch.Generator(devices.device)
             torch_generator = torch.Generator("cuda")
 
         init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
@@ -392,15 +392,14 @@ class Inpainting:
             metadata.add_text("parameters", infotext)
 
             # save_name = "_".join([ia_file_manager.savename_prefix, os.path.basename(inp_model_id), str(seed)]) + ".png"
-            img_idx = len(os.listdir(output))
+            if output is not None:
+                img_idx = len(os.listdir(output))
+                save_name=os.path.join(output, f"{img_idx}.png")
+                output_image.save(save_name, pnginfo=metadata)
 
-            # save_name = generate_inpaint_image_dir + f"{img_idx}.png"
-            save_name=os.path.join(output, f"{img_idx}.png")
-            # save_name = os.path.join(ia_file_manager.outputs_dir, save_name)
-            output_image.save(save_name, pnginfo=metadata)
-
-            output_list.append(output_image)
+                output_list.append(output_image)
+            else:
+                output_list.append(encode_to_base64(output_image))
 
         return output_list
-            # return output_list, max([1, iteration_count - (count + 1)])
 

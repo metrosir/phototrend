@@ -13,7 +13,6 @@ from utils.utils import project_dir
 
 import api.api as Api
 import time
-from PIL import Image
 
 
 def rmbg(image, is_result=False) -> str:
@@ -81,19 +80,14 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         return generate_image(select_model, select_vae, pos_prompt, neg_prompt, batch_count,
                                        contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height)
     else:
-        print("batch_count:", batch_count)
-        from scripts.inpaint import run_inpaint, Inpainting
+        from scripts.inpaint import Inpainting
         from scripts.piplines.controlnet_pre import lineart_image
         idx = datadir.get_file_idx(check_dir=datadir.commodity_merge_scene_image_dir)
         generate_image_sub_dir = datadir.generate_self_innovate_image_dir.format(uuid=datadir.uuid, idx=idx)
         if not pathlib.Path(generate_image_sub_dir).exists():
             pathlib.Path(generate_image_sub_dir).mkdir(parents=True, exist_ok=True)
         comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
-        # comm_merge_scene_mask_im = f'{datadir.merge_after_mask_image_dir}/{datadir.get_file_idx()}.png'
         mask_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
-        # mask_im = f'{datadir.mask_image_dir}/{datadir.get_file_idx()}.png'
-        # comm_merge_scene_im= f'{project_dir}/test/input/inpaint/images/2.png'
-        # mask_im = f'{project_dir}/test/input/inpaint/masks/2.png'
 
         ip = Inpainting(
             # base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
@@ -133,7 +127,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             mask_image=mask_im,
             prompt=pos_prompt,
             n_prompt=neg_prompt,
-            ddim_steps=40,
+            ddim_steps=30,
             cfg_scale=7.5,
             seed=-1,
             composite_chk=True,
@@ -154,7 +148,6 @@ history_dirs = datadir.get_history_dirs()
 models = sd_models()
 models_title = []
 commodity_def_model_idx = 0
-print(f"models:{models}")
 if models:
     for idx, model in enumerate(models):
         models_title.append(model['title'])
@@ -165,14 +158,12 @@ if models:
 vae_models = sd_vae()
 vae_models_title = []
 commodity_def_vae_idx = 0
-print(f"vae_models:{vae_models}")
 if vae_models:
     for idx, model in enumerate(vae_models):
         vae_models_title.append(model['model_name'])
         if model['model_name'].find(constant.def_vae['commodity']) != -1:
             commodity_def_vae_idx = idx
 
-print("vae_models_title:", vae_models_title)
 
 
 

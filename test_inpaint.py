@@ -177,12 +177,15 @@ def inpaint2():
 
 
 if __name__ == "__main__":
-    # from diffusers import ControlNetModel, StableDiffusionControlNetPipeline
-    from diffusers import StableDiffusionControlNetInpaintPipeline
-    pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained("Uminosachi/realisticVisionV51_v51VAE-inpainting", cache_dir='/tmp/rs/', local_files_only=False)
-    # import torch
+    import sys
+    import os
+    from utils.utils import project_dir, models_path
+    from PIL import Image
+    from utils.image import encode_to_base64
 
-    # controlnet = ControlNetModel.from_pretrained("metrosir/phototrend", local_files_only=False, subfolder="controlnets/ip-adapter-plus")
-    # controlnet = ControlNetModel.from_pretrained("metrosir/ip-adapter-plus", local_files_only=False)
+    # img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/commodity_merge_scene_image/0.png"))
+    # /data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png
+    img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png"))
+    img = encode_to_base64(img)
+    print(img)
 
-    # inpaint3()
