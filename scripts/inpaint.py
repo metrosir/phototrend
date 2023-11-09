@@ -11,7 +11,7 @@ from utils.image import auto_resize_to_pil, read_image_to_np, encode_to_base64
 from utils.datadir import generate_inpaint_image_dir
 import scripts.devices as devices
 
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageFilter
 from PIL.PngImagePlugin import PngInfo
 
 
@@ -218,38 +218,42 @@ gpipe=None
 
 
 class Inpainting:
+    pipe = None
 
-    def __init__(self, base_model, subfolder, controlnet: list,):
-        self.pipe = None
+    def __init__(self, base_model, subfolder, controlnet: list, textual_inversion: dict):
         self.base_model = base_model
         self.base_model_sub = subfolder
         self.controlnet_image = []
         self.controlnet_scale = []
 
-        self.controlnet = []
+        self.controlnets = controlnet
         self.local_files_only = False
         if platform.system() == "Darwin":
             self.torch_dtype = torch.float32
         else:
             self.torch_dtype = torch.float16
-        self.set_controlnets(controlnet)
-        global gpipe
-        if gpipe is None:
-            self.pipe = self.setup()
-            gpipe = self.setup()
-        else:
-            self.pipe = gpipe
+        self.pipe = self.setup()
+        self.set_textual_inversion(**textual_inversion)
 
         self.pipe.safety_checker = None
         self.sampler_name = None
 
     def setup(self):
         try:
+            controlnet = []
+            for contr_info in self.controlnets:
+                path = contr_info['model_path']
+                contr_info.pop('image')
+                contr_info.pop('scale')
+                contr_info.pop('model_path')
+                controlnet.append(
+                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
+                )
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
                 torch_dtype=self.torch_dtype,
                 local_files_only=self.local_files_only,
-                controlnet=self.controlnet,
+                controlnet=controlnet,
                 subfolder=self.base_model_sub,
             )
         except Exception as e:
@@ -258,26 +262,16 @@ class Inpainting:
         return self.pipe
 
     def set_textual_inversion(self, model_id, token, weight_name, subfolder=None):
-        if gpipe is None:
-            from .piplines.textual_inversion import load
-            load(pipe=self.pipe, model_id=model_id, token=token, weight_name=weight_name, subfolder=subfolder)
+        from .piplines.textual_inversion import load
+        load(pipe=self.pipe, model_id=model_id, token=token, weight_name=weight_name, subfolder=subfolder)
 
-    def set_controlnets(self, controlnets):
+    def set_controlnet_input(self, controlnets):
+        self.controlnet_image = []
+        self.controlnet_scale = []
         if len(controlnets) > 0:
             for contr_info in controlnets:
                 self.controlnet_image.append(load_image(contr_info['image']))
                 self.controlnet_scale.append(contr_info['scale'])
-                path = contr_info['model_path']
-                contr_info.pop('image')
-                contr_info.pop('scale')
-                contr_info.pop('model_path')
-                if gpipe is None:
-                    print(1111111111)
-                    self.controlnet.append(
-                        # ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info).to("cuda")
-                        ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
-                    )
-                    print(222222222)
             return self.pipe
         raise ValueError("Controlnet is empty")
 
@@ -327,7 +321,7 @@ class Inpainting:
             self.pipe.enable_attention_slicing()
             torch_generator = torch.Generator(devices.cpu)
         else:
-            # todo 这里需要注意，如果使用gpipe 需要使用.to("cuda")
+            # todo 这里需要注意，不做gc回收内存 需要使用.to("cuda")
             # self.pipe.enable_model_cpu_offload()
             self.pipe = self.pipe.to('cuda')
             if shared.xformers:
@@ -367,7 +361,7 @@ class Inpainting:
                 "eta": eta,
             }
 
-            print(f"pipe_args_dict:{pipe_args_dict}")
+            ia_logging.info(f"PIPE Args Dict:{pipe_args_dict}")
             output_image = self.pipe(**pipe_args_dict).images[0]
 
             if composite_chk:

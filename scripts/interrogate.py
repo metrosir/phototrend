@@ -132,13 +132,11 @@ class InterrogateModels:
         return model, preprocess
 
     def load(self):
-        print("self.blip_model:", self.blip_model)
         if self.blip_model is None:
             self.blip_model = self.load_blip_model()
             self.blip_model = self.blip_model.half()
         self.blip_model = self.blip_model.to("cuda")
 
-        print("self.clip_model:", self.clip_model)
         if self.clip_model is None:
             self.clip_model, self.clip_preprocess = self.load_clip_model()
             self.clip_model = self.clip_model.half()
@@ -213,7 +211,6 @@ class InterrogateModels:
 
             for name, topn, items in self.categories():
                 matches = self.rank(image_features, items, top_count=topn)
-                print("matches:", matches)
                 for match, score in matches:
                     if interrogate_return_ranks:
                         res += f", ({match}:{score/100:.3f})"

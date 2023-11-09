@@ -1,3 +1,4 @@
+from .utils import project_dir
 
 def_model = {
     "commodity": "icbinpRelapseRC.zgS8.safetensors",
@@ -32,5 +33,33 @@ mode_params = {
         'lineart_weight': 0.7,
         'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
+    }
+}
+
+init_model = {
+    'base_mode':'metrosir/realistic',
+    'controlnets': [
+        {
+            'low_cpu_mem_usage': False,
+            'device_map': None,
+            'model_path': 'metrosir/phototrend',
+            "subfolder": 'controlnets/ip-adapter-plus',
+            'scale': [],
+            'image': None,
+            'local_files_only': False
+        },
+        {
+            'low_cpu_mem_usage': False,
+            'model_path': 'metrosir/phototrend',
+            'subfolder': 'controlnets/lineart-fp16',
+            'scale': [],
+            'device_map': None,
+            'image': None,
+        }
+    ],
+    'textual_inversion': {
+        'model_id': f'{project_dir}/models/textual_inversion/negative_prompt/realisticvision-negative-embedding.pt',
+        'token': 'realisticvision-negative-embedding',
+        'weight_name': 'string_to_param',
     }
 }

@@ -89,40 +89,23 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
         mask_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
 
-        ip = Inpainting(
-            # base_model="/data/aigc/stable-diffusion-webui/models/Stable-diffusion/civitai/residentchiefnz/diffusers",
-            base_model='metrosir/realistic',
-            subfolder=None,
-            controlnet=[
+        if Api.gpipe is None:
+            Api.gpipe = Api.set_model()
+
+        Api.gpipe.set_controlnet_input(
+            [
                 {
-                    'low_cpu_mem_usage': False,
-                    'device_map': None,
-                    # 'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter-plus/',
-                    'model_path': 'metrosir/phototrend',
-                    "subfolder": 'controlnets/ip-adapter-plus',
-                    # 'model_path': 'InvokeAI/ip_adapter_plus_sd15',
                     'scale': contr_ipa_weight,
                     'image': comm_merge_scene_im,
-                    'local_files_only': False
                 },
                 {
-                    'low_cpu_mem_usage': False,
-                    # 'model_path': '/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/lineart-fp16/',
-                    'model_path': 'metrosir/phototrend',
-                    'subfolder': 'controlnets/lineart-fp16',
                     'scale': contr_lin_weight,
-                    'device_map': None,
                     'image': lineart_image(input_image=comm_merge_scene_im, width=width)
                 }
             ]
         )
-        ip.set_textual_inversion(
-            f'{project_dir}/models/textual_inversion/negative_prompt/realisticvision-negative-embedding.pt',
-            # 'metrosir/phototrend',
-            'realisticvision-negative-embedding',
-            'string_to_param',
-        )
-        return ip.run_inpaint(
+
+        return Api.gpipe.run_inpaint(
             input_image=comm_merge_scene_im,
             mask_image=mask_im,
             prompt=pos_prompt,
@@ -400,7 +383,7 @@ with gr.Blocks() as G:
             clothes_ui()
 
 if __name__ == '__main__':
-    app, local_url, share_url = G.queue(64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True,
+    app, local_url, share_url = G.queue(64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, enable_queue=True,
                                                    prevent_thread_lock=True)
     app.user_middleware = [x for x in app.user_middleware if x.cls.__name__ != 'CORSMiddleware']
     Api.Api(app)
