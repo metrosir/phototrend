@@ -361,7 +361,7 @@ class Inpainting:
                 "eta": eta,
             }
 
-            ia_logging.info(f"PIPE Args Dict:{pipe_args_dict}")
+            ia_logging.info(f"Pipe Args Dict:{pipe_args_dict}")
             output_image = self.pipe(**pipe_args_dict).images[0]
 
             if composite_chk:

@@ -1,3 +1,5 @@
+import json
+import sys
 import time
 
 from fastapi import FastAPI, File, UploadFile, Request, Query
@@ -12,6 +14,7 @@ from utils.utils import project_dir
 from PIL import Image
 import scripts.interrogate
 from utils.pt_logging import ia_logging
+import json
 # from .models import *
 
 from utils.constant import mode_params, self_innovate_mode, init_model
@@ -59,6 +62,23 @@ def commodity_image_generate_api_params(request_data):
                 contr_ipa_weight = controlnet['weight']
             elif controlnet['controlnet_module'] == 'lineart_realistic':
                 contr_lin_weight = controlnet['weight']
+
+
+    # def print_log(**kwargs):
+    #     ia_logging.info(f"API Params:{kwargs}")
+    #
+    # print_log(input_image=input_image[:100],
+    #           mask=mask[:100],
+    #           base_model=base_model,
+    #           pos_prompt=pos_prompt,
+    #           neg_prompt=neg_prompt,
+    #           batch_count=batch_count,
+    #           sampler_name=sampler_name,
+    #           contr_inp_weight=contr_inp_weight,
+    #           contr_ipa_weight=contr_ipa_weight,
+    #           contr_lin_weight=contr_lin_weight,
+    #           width=width,
+    #           height=height)
     return input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height
 
 
@@ -83,6 +103,17 @@ class Api:
     async def commodity_image_generate(self, request: Request):
         strt_time = time.time()
         data = await request.json()
+
+        def print_log(**kwargs):
+            import copy
+            tmp = copy.deepcopy(kwargs)
+            tmp['data']['data']['input_images'][0] = kwargs['data']['data']['input_images'][0][:100]
+            tmp['data']['data']['mask_image'] = kwargs['data']['data']['mask_image'][:100]
+            tmp = json.dumps(tmp)
+            ia_logging.info(f"API Params:{tmp}")
+        print_log(data=data)
+
+        ret=[]
         try:
             input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height \
                 = commodity_image_generate_api_params(data.get('data'))
@@ -127,11 +158,7 @@ class Api:
                 output=None
             )
         except Exception as e:
-            # 打印错误调用栈
-            import traceback
-            traceback.print_exc()
-
-            ia_logging.error(f"API Error:{str(e)}")
+            ia_logging.error(f"API Error:{str(e)}", exc_info=True)
 
         end_time = time.time()
         duration = end_time - strt_time

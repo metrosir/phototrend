@@ -1,4 +1,5 @@
-import logging
+import logging.config
+from .utils import project_dir
 
 import warnings
 from typing import Union
@@ -8,6 +9,8 @@ from PIL import Image, ImageDraw
 
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="transformers")
 
+logging.config.fileConfig(f'{project_dir}/configs/log/logging.conf')
+
 ia_logging = logging.getLogger("PhotoTrend")
 ia_logging.setLevel(logging.INFO)
 ia_logging.propagate = False
@@ -16,6 +19,15 @@ ia_logging_sh = logging.StreamHandler()
 ia_logging_sh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 ia_logging_sh.setLevel(logging.INFO)
 ia_logging.addHandler(ia_logging_sh)
+
+
+def w_info(title, msg):
+    pass
+
+def w_debug(msg: str):
+    pass
+def w_error(msg: str):
+    pass
 
 
 def draw_text_image(
