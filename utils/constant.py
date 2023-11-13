@@ -28,7 +28,7 @@ mode_params = {
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     },
     self_innovate_mode: {
-        'inpaint_weight': 0.75,
+        'inpaint_weight': 0.95,
         'ip-adapter_weight': 0.75,
         'lineart_weight': 0.7,
         'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
