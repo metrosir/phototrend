@@ -13,7 +13,7 @@ import utils.datadir as datadir
 from utils.utils import project_dir
 from PIL import Image
 import scripts.interrogate
-from utils.pt_logging import ia_logging
+from utils.pt_logging import ia_logging, collect_info
 import json
 # from .models import *
 
@@ -111,7 +111,8 @@ class Api:
             tmp['data']['data']['mask_image'] = kwargs['data']['data']['mask_image'][:100]
             tmp = json.dumps(tmp)
             ia_logging.info(f"API Params:{tmp}")
-        print_log(data=data)
+            return tmp
+        req_params = print_log(data=data)
 
         ret=[]
         try:
@@ -158,6 +159,11 @@ class Api:
                 output=None
             )
         except Exception as e:
+            collect_info({
+                "api": request.url.path,
+                "host": request.client.host,
+                "req_params": req_params,
+            }, e)
             ia_logging.error(f"API Error:{str(e)}", exc_info=True)
 
         end_time = time.time()

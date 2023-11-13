@@ -1,4 +1,5 @@
 from .utils import project_dir
+import os
 
 def_model = {
     "commodity": "icbinpRelapseRC.zgS8.safetensors",
@@ -63,3 +64,8 @@ init_model = {
         'weight_name': 'string_to_param',
     }
 }
+
+COLLECT_URL = os.getenv("COLLECT_URL")
+
+# pt_test, pt_dev, pt_prod
+PT_ENV = os.getenv("PT_ENV")

@@ -182,7 +182,12 @@ if __name__ == "__main__":
     from utils.utils import project_dir, models_path
     from PIL import Image
     from utils.image import encode_to_base64
+    import asyncio
 
+    from utils.pt_logging import collect_info
+
+    collect_info("", Exception("test"))
+    sys.exit(1)
     # img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/commodity_merge_scene_image/0.png"))
     # /data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png
     img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png"))

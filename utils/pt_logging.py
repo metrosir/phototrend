@@ -3,9 +3,11 @@ from .utils import project_dir
 
 import warnings
 from typing import Union
+from utils.constant import COLLECT_URL, PT_ENV
 
 import numpy as np
 from PIL import Image, ImageDraw
+import asyncio
 
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="transformers")
 
@@ -29,6 +31,32 @@ def w_debug(msg: str):
 def w_error(msg: str):
     pass
 
+
+def collect_info(msg: object, exception: Exception = None):
+    import requests
+    import traceback
+    import json
+    import threading
+
+    try:
+        msg = json.dumps(msg)
+    except:
+        pass
+
+    if exception is None:
+        data = {"msg": msg, "level": "error", "env": PT_ENV}
+    else:
+        traceback_str = traceback.format_exc()
+        data = {"msg": msg, "exception": str(exception), "level": "error", "traceback": traceback_str, "env": PT_ENV}
+
+    def send():
+        try:
+            requests.put(COLLECT_URL, data=json.dumps(data), timeout=0.5)
+        except Exception as e:
+            ia_logging.error(f"collect_info error: {e}", exc_info=True)
+            pass
+    thread = threading.Thread(target=send)
+    thread.start()
 
 def draw_text_image(
         input_image: Union[np.ndarray, Image.Image],
