@@ -68,7 +68,7 @@ def sd_vae():
     except Exception as e:
         print("requests error:", str(e))
         return None
-    if response_data is not False:
+    if response_data is not False and type(response_data) == list:
         response_data.insert(0, {'model_name': 'Automatic', 'filename': ''})
         response_data.insert(1, {'model_name': 'None', 'filename': ''})
         return response_data
