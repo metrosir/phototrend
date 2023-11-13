@@ -193,7 +193,7 @@ def commodity_tab():
                                     with gr.Column():
                                         select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
                                                                    elem_id="select_model_list",
-                                                                   value=models_title[commodity_def_model_idx],
+                                                                   value=models_title[commodity_def_model_idx] if len(models_title) > 0 else None,
                                                                    interactive=True).style(width=50)
                                     with gr.Column():
                                         mode = gr.Radio(label='作图方式(Mode)', choices=constant.generate_mode, type="value", value=constant.generate_mode[constant.self_innovate_mode], interactive=True)
@@ -224,7 +224,7 @@ def commodity_tab():
                             with gr.Column():
                                 select_vae = gr.Dropdown(label='Vae', choices=vae_models_title,
                                                          elem_id="select_vae_list",
-                                                         value=vae_models_title[commodity_def_vae_idx],
+                                                         value=vae_models_title[commodity_def_vae_idx] if len(vae_models_title) > 0 else None,
                                                          interactive=True).style(width=50)
                             gr.Markdown('ControlNet')
                             contr_inp_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Inpaint weight',
@@ -321,7 +321,7 @@ def clothes_ui():
                             with gr.Box():
                                 select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
                                                            elem_id="select_model_list",
-                                                           value=models_title[commodity_def_model_idx],
+                                                           value=models_title[commodity_def_model_idx] if len(models_title) > 0 else None,
                                                            interactive=True).style(width=50)
 
                             pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="clothes_prompt",
@@ -337,7 +337,7 @@ def clothes_ui():
                             with gr.Column():
                                 select_vae = gr.Dropdown(label='Vae', choices=vae_models_title,
                                                          elem_id="select_vae_list",
-                                                         value=vae_models_title[commodity_def_vae_idx],
+                                                         value=vae_models_title[commodity_def_vae_idx] if len(vae_models_title) > 0 else None,
                                                          interactive=True).style(width=50)
                             gr.Markdown('ControlNet')
                             contr_inp_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Inpaint weight',
