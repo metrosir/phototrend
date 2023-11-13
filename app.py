@@ -384,7 +384,7 @@ with gr.Blocks() as G:
             clothes_ui()
 
 if __name__ == '__main__':
-    app, local_url, share_url = G.queue(64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, enable_queue=True,
+    app, local_url, share_url = G.queue(64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, enable_queue=True, share=cmd_opts.share,
                                                    prevent_thread_lock=True)
     app.user_middleware = [x for x in app.user_middleware if x.cls.__name__ != 'CORSMiddleware']
     Api.Api(app)
