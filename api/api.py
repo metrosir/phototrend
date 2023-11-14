@@ -118,10 +118,13 @@ class Api:
                 pathlib.Path(img_dir).mkdir(parents=True, exist_ok=True)
                 idx = len(os.listdir(img_dir))
                 for im in images:
-                    decode_base64_to_image(im).save(f"{img_dir}/{idx}.png")
+                    if type(im) is not Image.Image:
+                        decode_base64_to_image(im).save(f"{img_dir}/{idx}.png")
+                    else:
+                        im.save(f"{img_dir}/{idx}.png")
                     idx = idx + 1
             except Exception as e:
-                log_echo("API Error", msg={}, exception=e, is_collect=True)
+                log_echo("API Error", msg={"id_task": id_task}, exception=e, is_collect=True)
 
         strt_time = time.time()
         data = await request.json()
