@@ -159,19 +159,19 @@ def commodity_tab():
                         with gr.Row():
                             with gr.Column():
                                     gr.Markdown('上传图片(Upload image)')
-                                    instance_images = gr.Image(type='filepath').style(height=360)
+                                    instance_images = gr.Image(type='filepath', height=360)
                             with gr.Column():
                                     with gr.Column():
                                         gr.Markdown('去背结果(Remove background result)')
                                         run_button = gr.Button('去背(remove background)')
-                                        output_images = gr.Gallery(label='Output', show_label=False, elem_id='rmbg_box').style(columns=1, rows=1, height=300, object_fit="contain")
+                                        output_images = gr.Gallery(label='Output', show_label=False, elem_id='rmbg_box', columns=1, rows=1, height=300, object_fit="contain")
                                     run_button.click(fn=rmbg, inputs=[instance_images], outputs=[output_images])
 
                     with gr.TabItem("上传去背后的图片(Remove background result)"):
                         with gr.Row():
                             with gr.Column():
                                 gr.Markdown('上传图片(Upload image)')
-                                result_rm_img = gr.Image(type='pil', image_mode='RGBA').style(height=300)
+                                result_rm_img = gr.Image(type='pil', image_mode='RGBA', height=300)
                         with gr.Row():
                             result_rm_img_but = gr.Button('上传(Upload)')
                             result_rm_img_but.click(fn=upload_rem_img_result, inputs=[result_rm_img], outputs=[output_images])
@@ -193,7 +193,7 @@ def commodity_tab():
                                         select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
                                                                    elem_id="select_model_list",
                                                                    value=models_title[commodity_def_model_idx] if len(models_title) > 0 else None,
-                                                                   interactive=True).style(width=50)
+                                                                   interactive=True)
                                     with gr.Column():
                                         mode = gr.Radio(label='作图方式(Mode)', choices=constant.generate_mode, type="value", value=constant.generate_mode[constant.self_innovate_mode], interactive=True)
 
@@ -224,7 +224,7 @@ def commodity_tab():
                                 select_vae = gr.Dropdown(label='Vae', choices=vae_models_title,
                                                          elem_id="select_vae_list",
                                                          value=vae_models_title[commodity_def_vae_idx] if len(vae_models_title) > 0 else None,
-                                                         interactive=True).style(width=50)
+                                                         interactive=True)
                             gr.Markdown('ControlNet')
                             contr_inp_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Inpaint weight',
                                                          value=constant.mode_params[constant.self_innovate_mode]['inpaint_weight'], elem_id="inpaint_weight")
@@ -249,19 +249,16 @@ def commodity_tab():
                     with gr.Tabs():
                         with gr.TabItem("生成结果(Generate Result)"):
                             with gr.Column():
-                                output_generate_images = gr.Gallery(label='Output', show_label=False).style(
-                                    columns=4, rows=4,
-                                    height=500,
-                                    object_fit="contain")
+                                output_generate_images = gr.Gallery(label='Output', show_label=False, columns=4, rows=4, height=500, object_fit="contain")
                         with gr.TabItem('历史记录(History)'):
                             with gr.Column():
                                 with gr.Row():
                                     with gr.Column():
-                                        total_history = gr.Button('刷新(Refresh)').style(height=10)
-                                        history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                        total_history = gr.Button('刷新(Refresh)')
+                                        history_imgs = gr.Gallery(show_label=True, columns=4, rows=4, height=500)
                                     with gr.Column():
-                                        self_innovate_history = gr.Button('刷新(Refresh)').style(height=10)
-                                        self_innovate_history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                        self_innovate_history = gr.Button('刷新(Refresh)')
+                                        self_innovate_history_imgs = gr.Gallery(show_label=True, columns=4, rows=4, height=500)
                                         g_type = gr.Textbox(value=3, visible=False)
                         if constant.PT_ENV is not None and constant.PT_ENV != '':
                             with gr.TabItem("api generate result"):
@@ -322,10 +319,10 @@ def clothes_ui():
                         with gr.Row():
                             with gr.Column():
                                 gr.Markdown('上传人物图片(Upload image)')
-                                human_image = gr.Image(type='filepath', elem_id="human_image").style(height=300)
+                                human_image = gr.Image(type='filepath', elem_id="human_image", height=300)
                             with gr.Column():
                                 gr.Markdown('上传衣服图片(Upload image)')
-                                clothes_image = gr.Image(type='filepath', elem_id="clothes_image").style(height=300)
+                                clothes_image = gr.Image(type='filepath', elem_id="clothes_image", height=300)
                         # with gr.Row():
                             # result_rm_img_but = gr.Button('上传(Upload)')
                             # result_rm_img_but.click(fn=clothes_upload_file, inputs=[human_image, clothes_image])
@@ -345,7 +342,7 @@ def clothes_ui():
                                 select_model = gr.Dropdown(label='模型(Model)', choices=models_title,
                                                            elem_id="select_model_list",
                                                            value=models_title[commodity_def_model_idx] if len(models_title) > 0 else None,
-                                                           interactive=True).style(width=50)
+                                                           interactive=True)
 
                             pos_prompt = gr.Textbox(label="提示语(Prompt)", lines=3, elem_id="clothes_prompt",
                                                     value=prompt,
@@ -361,7 +358,7 @@ def clothes_ui():
                                 select_vae = gr.Dropdown(label='Vae', choices=vae_models_title,
                                                          elem_id="select_vae_list",
                                                          value=vae_models_title[commodity_def_vae_idx] if len(vae_models_title) > 0 else None,
-                                                         interactive=True).style(width=50)
+                                                         interactive=True)
                             gr.Markdown('ControlNet')
                             contr_inp_weight = gr.Slider(minimum=0, maximum=2, step=0.01, label='Inpaint weight',
                                                          value=0.5, elem_id="inpaint_weight")
@@ -376,16 +373,13 @@ def clothes_ui():
                     with gr.Tabs():
                         with gr.TabItem("生成结果(Generate Result)"):
                             with gr.Column():
-                                output_generate_images = gr.Gallery(label='Output', show_label=False).style(
-                                    columns=4, rows=4,
-                                    height=500,
-                                    object_fit="contain")
+                                output_generate_images = gr.Gallery(label='Output', show_label=False, columns=4, rows=4, height=500, object_fit="contain")
                         with gr.TabItem('历史记录(History)'):
                             with gr.Column():
                                 with gr.Row():
                                     with gr.Column():
-                                        total_history = gr.Button('刷新(Refresh)').style(height=10)
-                                history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
+                                        total_history = gr.Button('刷新(Refresh)')
+                                history_imgs = gr.Gallery(show_label=True, columns=4, rows=4, height=500)
 
             generate_type = gr.Text(value=2, visible=False)
 
