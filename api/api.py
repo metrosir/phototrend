@@ -103,6 +103,12 @@ class Api:
     async def commodity_image_generate(self, request: Request):
 
         def saveimage(id_task, _type: str, images: list):
+            '''
+            :param id_task:
+            :param _type: enumerate:input,output
+            :param images:
+            :return:
+            '''
             from utils.constant import PT_ENV
             if PT_ENV is None:
                 return None
@@ -152,6 +158,8 @@ class Api:
             else:
                 pipe = gpipe
 
+            lineart_input_img = lineart_image(input_image=input_image, width=width)
+            saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img])
             pipe.set_controlnet_input([
                 {
                     'scale': contr_ipa_weight,
@@ -159,7 +167,7 @@ class Api:
                 },
                 {
                     'scale': contr_lin_weight,
-                    'image': lineart_image(input_image=input_image, width=width)
+                    'image': lineart_input_img
                 }
             ])
 
