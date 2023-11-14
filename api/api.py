@@ -109,7 +109,6 @@ class Api:
             :param images:
             :return:
             '''
-            print(1111)
             from utils.constant import PT_ENV
             if PT_ENV is None:
                 return None
