@@ -1,6 +1,7 @@
 import gc
 import math
 import os
+import pathlib
 import platform
 import PIL.Image
 import PIL.ImageOps
@@ -300,7 +301,7 @@ class Inpainting:
     def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
-                    ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1):
+                    ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False):
 
         if not type(input_image) is np.ndarray:
             if type(input_image) is str:
@@ -387,13 +388,19 @@ class Inpainting:
 
             # save_name = "_".join([ia_file_manager.savename_prefix, os.path.basename(inp_model_id), str(seed)]) + ".png"
             if output is not None:
+                pathlib.Path(output).mkdir(parents=True, exist_ok=True)
                 img_idx = len(os.listdir(output))
                 save_name=os.path.join(output, f"{img_idx}.png")
                 output_image.save(save_name, pnginfo=metadata)
-
-                output_list.append(output_image)
+                if ret_base64:
+                    output_list.append(encode_to_base64(output_image))
+                else:
+                    output_list.append(output_image)
             else:
-                output_list.append(encode_to_base64(output_image))
+                if ret_base64:
+                    output_list.append(encode_to_base64(output_image))
+                else:
+                    output_list.append(output_image)
 
         return output_list
 

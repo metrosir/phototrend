@@ -32,7 +32,7 @@ def w_error(msg: str):
     pass
 
 
-def collect_info(msg: object, exception: Exception = None):
+def log_echo(title: str, msg: object, exception: Exception = None, is_collect: bool = False, level: str = "error"):
     import requests
     import traceback
     import json
@@ -44,19 +44,28 @@ def collect_info(msg: object, exception: Exception = None):
         pass
 
     if exception is None:
-        data = {"msg": msg, "level": "error", "env": PT_ENV}
+        data = {"title": title,
+                "msg": msg,
+                "level": level,
+                "env": PT_ENV}
     else:
         traceback_str = traceback.format_exc()
-        data = {"msg": msg, "exception": str(exception), "level": "error", "traceback": traceback_str, "env": PT_ENV}
-
-    def send():
-        try:
-            requests.put(COLLECT_URL, data=json.dumps(data), timeout=0.5)
-        except Exception as e:
-            ia_logging.error(f"collect_info error: {e}", exc_info=True)
-            pass
-    thread = threading.Thread(target=send)
-    thread.start()
+        data = {"title": title,
+                "msg": msg,
+                "exception": str(exception),
+                "level": level,
+                "traceback": traceback_str,
+                "env": PT_ENV}
+    ia_logging.error(f"{title}: {data}", exc_info=True)
+    if is_collect:
+        def send():
+            try:
+                requests.put(COLLECT_URL, data=json.dumps(data), timeout=0.5)
+            except Exception as e:
+                ia_logging.error(f"collect_info error: {e}", exc_info=True)
+                pass
+        thread = threading.Thread(target=send)
+        thread.start()
 
 def draw_text_image(
         input_image: Union[np.ndarray, Image.Image],

@@ -13,7 +13,7 @@ import utils.datadir as datadir
 from utils.utils import project_dir
 from PIL import Image
 import scripts.interrogate
-from utils.pt_logging import ia_logging, collect_info
+from utils.pt_logging import ia_logging, log_echo
 import json
 # from .models import *
 
@@ -101,18 +101,41 @@ class Api:
         pass
 
     async def commodity_image_generate(self, request: Request):
+
+        def saveimage(id_task, _type: str, images: list):
+            from utils.constant import PT_ENV
+            if PT_ENV is None:
+                return None
+
+            img_dir = datadir.api_generate_commodity_dir.format(id_task=id_task, type=_type)
+            try:
+                pathlib.Path(img_dir).mkdir(parents=True, exist_ok=True)
+                idx = len(os.listdir(img_dir))
+                for im in images:
+                    decode_base64_to_image(im).save(f"{img_dir}/{idx}.png")
+                    idx = idx + 1
+            except Exception as e:
+                log_echo("API Error", msg={}, exception=e, is_collect=True)
+
         strt_time = time.time()
         data = await request.json()
+        if data is None or data['data'] is None or data['id_task'] is None:
+            return {"message": "data is None", "data": None, "duration": 0}
 
-        def print_log(**kwargs):
+        def print_log(id_task, **kwargs):
             import copy
             tmp = copy.deepcopy(kwargs)
             tmp['data']['data']['input_images'][0] = kwargs['data']['data']['input_images'][0][:100]
             tmp['data']['data']['mask_image'] = kwargs['data']['data']['mask_image'][:100]
+            saveimage(
+                id_task=id_task,
+                _type="input",
+                images=[kwargs['data']['data']['input_images'][0], kwargs['data']['data']['mask_image']]
+            )
             tmp = json.dumps(tmp)
             ia_logging.info(f"API Params:{tmp}")
             return tmp
-        req_params = print_log(data=data)
+        req_params = print_log(id_task=data['id_task'], data=data)
 
         ret=[]
         try:
@@ -156,15 +179,15 @@ class Api:
                 height=(int(height) // 8) * 8,
                 strength=contr_inp_weight,
                 eta=31337,
-                output=None
+                output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output",),
+                ret_base64=True
             )
         except Exception as e:
-            collect_info({
+            log_echo("API Error", {
                 "api": request.url.path,
                 "host": request.client.host,
                 "req_params": req_params,
-            }, e)
-            ia_logging.error(f"API Error:{str(e)}", exc_info=True)
+            }, e, is_collect=True)
 
         end_time = time.time()
         duration = end_time - strt_time

@@ -59,7 +59,6 @@ def refresh_history_img(type=1):
         dirs = datadir.generate_self_innovate_glob_img
     else:
         dirs = datadir.clothes_generate_glob_img
-    print("dirs:", dirs)
     return glob.glob(dirs)
 
 
@@ -264,6 +263,30 @@ def commodity_tab():
                                         self_innovate_history = gr.Button('刷新(Refresh)').style(height=10)
                                         self_innovate_history_imgs = gr.Gallery(show_label=True).style(columns=4, rows=4, height=500)
                                         g_type = gr.Textbox(value=3, visible=False)
+                        if constant.PT_ENV is not None and constant.PT_ENV != '':
+                            with gr.TabItem("api generate result"):
+                                    with gr.Box():
+                                        def disp_apihistory(id_task):
+                                            input = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                              type='input') + '/*.png'
+                                            output = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                               type='output') + '/*.png'
+                                            return glob.glob(input), glob.glob(output)
+
+                                        with gr.Row():
+                                            with gr.Box():
+                                                with gr.Column():
+                                                    task_id = gr.Text(visible=True)
+                                                with gr.Column():
+                                                    api_hist_butt = gr.Button('查看(check)')
+                                        with gr.Row():
+                                            with gr.Column():
+                                                input = gr.Gallery()
+                                                pass
+                                            with gr.Column():
+                                                output = gr.Gallery()
+                                                pass
+                                        api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
 
 
             output_message = gr.Markdown()

@@ -184,9 +184,9 @@ if __name__ == "__main__":
     from utils.image import encode_to_base64
     import asyncio
 
-    from utils.pt_logging import collect_info
+    from utils.pt_logging import log_echo
 
-    collect_info("", Exception("test"))
+    log_echo("", Exception("test"))
     sys.exit(1)
     # img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/commodity_merge_scene_image/0.png"))
     # /data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png
