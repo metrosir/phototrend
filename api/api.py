@@ -101,7 +101,6 @@ class Api:
         pass
 
     async def commodity_image_generate(self, request: Request):
-        print(11111)
         def saveimage(id_task, _type: str, images: list):
             '''
             :param id_task:
@@ -127,9 +126,8 @@ class Api:
                 log_echo("API Error", msg={"id_task": id_task}, exception=e, is_collect=True)
 
         strt_time = time.time()
-        print(22222)
         data = await request.json()
-        print(33333)
+        ia_logging.info(f"API Download Duration Time: {strt_time}")
         if data is None or data['data'] is None or data['id_task'] is None:
             return {"message": "data is None", "data": None, "duration": 0}
 
