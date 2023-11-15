@@ -127,7 +127,7 @@ class Api:
 
         strt_time = time.time()
         data = await request.json()
-        ia_logging.info(f"API Download Duration Time: {strt_time-time.time()}")
+        ia_logging.info(f"API Download Duration Time: {time.time() - strt_time}")
         if data is None or data['data'] is None or data['id_task'] is None:
             return {"message": "data is None", "data": None, "duration": 0}
 
