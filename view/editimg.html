@@ -28,6 +28,7 @@
         <select id="size-select">
             <option value="1">768x1024</option>
             <option value="2">800x1424</option>
+            <option value="3">800x800</option>
         </select>
         <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
         <input type="button" id="sync_img" value="同步产品图">
@@ -69,6 +70,12 @@
                 'c_width': 400,
                 'c_height': 712
             },
+            3: {
+                'width': 800,
+                'height': 800,
+                'c_width': 400,
+                'c_height': 400
+            },
         }
         var pro_img = ''
         var pro_mask_img = ''
@@ -79,6 +86,7 @@
 
         document.getElementById('size-select').addEventListener("change", function () {
         var size = document.getElementById('size-select').value;
+        // console.info(size)
             width = sizes[size].width
             height = sizes[size].height
             canvas.setWidth(sizes[size].c_width);
@@ -220,7 +228,7 @@
             g_width.dispatchEvent(event);
             g_height.dispatchEvent(event);
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/deft_scene?type='+type, true);
+            xhr.open('GET', '/deft_scene?size_type='+type, true);
             xhr.responseType = 'blob';
             xhr.onload = function(e) {
               if (this.status == 200) {

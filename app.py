@@ -92,11 +92,15 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         if Api.gpipe is None:
             Api.gpipe = Api.set_model()
 
+        from PIL import Image
+
+        scene_im = Image.open(comm_merge_scene_im)
+        scene_im = scene_im.convert("RGB")
         Api.gpipe.set_controlnet_input(
             [
                 {
                     'scale': contr_ipa_weight,
-                    'image': comm_merge_scene_im,
+                    'image': scene_im,
                 },
                 {
                     'scale': contr_lin_weight,
@@ -401,7 +405,8 @@ with gr.Blocks() as G:
             clothes_ui()
 
 if __name__ == '__main__':
-    app, local_url, share_url = G.queue(1).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True)
+    #  max_size=2, api_open=False, status_update_rate='auto'
+    app, local_url, share_url = G.queue(concurrency_count=64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True)
     # enable_queue=True,
     app.user_middleware = [x for x in app.user_middleware if x.cls.__name__ != 'CORSMiddleware']
     Api.Api(app)

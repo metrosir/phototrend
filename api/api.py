@@ -3,7 +3,7 @@ import sys
 import time
 
 from fastapi import FastAPI, File, UploadFile, Request, Query
-from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse
 from typing import Optional
 import os
 import pathlib
@@ -95,13 +95,13 @@ class Api:
 
         self.app.add_api_route("/v1/image/interrogate", self.interrogate, methods=["post"])
 
-        self.app.add_api_route("/v1/commodity_image/generate", self.commodity_image_generate, methods=["post"])
+        self.app.add_api_route("/v1/commodity_image/generate", self.commodity_image_generate, methods=["post"], response_class=JSONResponse)
 
     def interrogate(self):
         pass
 
     async def commodity_image_generate(self, request: Request):
-
+        print(11111)
         def saveimage(id_task, _type: str, images: list):
             '''
             :param id_task:
@@ -127,7 +127,9 @@ class Api:
                 log_echo("API Error", msg={"id_task": id_task}, exception=e, is_collect=True)
 
         strt_time = time.time()
+        print(22222)
         data = await request.json()
+        print(33333)
         if data is None or data['data'] is None or data['id_task'] is None:
             return {"message": "data is None", "data": None, "duration": 0}
 
@@ -286,13 +288,15 @@ class Api:
             return {"data": f"{i_path}, type{img_type}", "caption": interrogate(i_path)}
 
 
+    def deft_scene(self, size_type: Optional[int] = None):
 
-    def deft_scene(self, type: Optional[int] = None):
         try:
-            if type == 1:
+            if size_type == 1:
                 return FileResponse(f"{project_dir}/worker_data/template/768x1024.png")
-            else:
+            elif size_type == 2:
                 return FileResponse(f"{project_dir}/worker_data/template/800x1422.jpeg")
+            else:
+                return FileResponse(f"{project_dir}/worker_data/template/800x800.png")
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
 
