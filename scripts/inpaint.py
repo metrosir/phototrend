@@ -33,6 +33,7 @@ from utils.pt_logging import ia_logging
 from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler,UniPCMultistepScheduler,
                        KDPM2AncestralDiscreteScheduler, KDPM2DiscreteScheduler,
                        StableDiffusionInpaintPipeline, StableDiffusionControlNetInpaintPipeline, ControlNetModel)
+from diffusers.pipelines.controlnet import MultiControlNetModel
 
 from transformers import logging as transformers_logging
 transformers_logging.set_verbosity_warning()
@@ -247,9 +248,11 @@ class Inpainting:
                 contr_info.pop('image')
                 contr_info.pop('scale')
                 contr_info.pop('model_path')
+                print(1)
                 controlnet.append(
                     ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
                 )
+                print(2)
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
                 torch_dtype=self.torch_dtype,
@@ -261,6 +264,40 @@ class Inpainting:
             ia_logging.error(str(e))
             raise ValueError(str(e))
         return self.pipe
+
+
+    def set_ip_adapter(self):
+        from utils.utils import is_torch2_available
+        if is_torch2_available():
+            from .attention_processor import IPAttnProcessor2_0 as IPAttnProcessor, AttnProcessor2_0 as AttnProcessor, \
+                CNAttnProcessor2_0 as CNAttnProcessor
+        else:
+            from .attention_processor import IPAttnProcessor, AttnProcessor, CNAttnProcessor
+        unet = self.pipe.unet
+        attn_procs = {}
+        for name in unet.attn_processors.keys():
+            cross_attention_dim = None if name.endswith("attn1.processor") else unet.config.cross_attention_dim
+            if name.startswith("mid_block"):
+                hidden_size = unet.config.block_out_channels[-1]
+            elif name.startswith("up_blocks"):
+                block_id = int(name[len("up_blocks.")])
+                hidden_size = list(reversed(unet.config.block_out_channels))[block_id]
+            elif name.startswith("down_blocks"):
+                block_id = int(name[len("down_blocks.")])
+                hidden_size = unet.config.block_out_channels[block_id]
+            if cross_attention_dim is None:
+                attn_procs[name] = AttnProcessor()
+            else:
+                attn_procs[name] = IPAttnProcessor(hidden_size=hidden_size, cross_attention_dim=cross_attention_dim,
+                scale=1.0,num_tokens= self.num_tokens).to(self.device, dtype=torch.float16)
+        unet.set_attn_processor(attn_procs)
+        if hasattr(self.pipe, "controlnet"):
+            if isinstance(self.pipe.controlnet, MultiControlNetModel):
+                for controlnet in self.pipe.controlnet.nets:
+                    controlnet.set_attn_processor(CNAttnProcessor(num_tokens=self.num_tokens))
+            else:
+                self.pipe.controlnet.set_attn_processor(CNAttnProcessor(num_tokens=self.num_tokens))
+
 
     def set_textual_inversion(self, model_id, token, weight_name, subfolder=None):
         from .piplines.textual_inversion import load

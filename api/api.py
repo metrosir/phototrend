@@ -1,3 +1,4 @@
+import glob
 import json
 import sys
 import time
@@ -7,7 +8,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSO
 from typing import Optional
 import os
 import pathlib
-from utils.image import convert_png_to_mask, mask_invert,remove_bg, decode_base64_to_image
+from utils.image import convert_png_to_mask, mask_invert,remove_bg, decode_base64_to_image, encode_to_base64
 import utils.datadir as datadir
 # from utils.req import interrogate
 from utils.utils import project_dir
@@ -96,9 +97,42 @@ class Api:
         self.app.add_api_route("/v1/image/interrogate", self.interrogate, methods=["post"])
 
         self.app.add_api_route("/v1/commodity_image/generate", self.commodity_image_generate, methods=["post"], response_class=JSONResponse)
+        self.app.add_api_route("/v1/commodity_image/result", self.commodity_image_result, methods=["get"],
+                               response_class=JSONResponse)
 
     def interrogate(self):
         pass
+
+
+    def commodity_image_result(self, request: Request):
+        
+        result = {
+            "data": [],
+            "message": "success",
+            "duration": 0,
+            "status": 200
+        }
+        if request.query_params['id_task'] is None:
+            result['message'] = "id_task is None"
+            result['status'] = 400
+            return result
+        try:
+            img_list = glob.glob(datadir.api_generate_commodity_dir.format(id_task=request.query_params['id_task'],
+                                                                               type="output", ) + "/*.png")
+            for path in img_list:
+                print("open file:", path)
+                im = Image.open(path).convert("RGB")
+                result['data'].append(encode_to_base64(im))
+        except Exception as e:
+            log_echo("API Error", {
+                "api": request.url.path,
+                "host": request.client.host,
+                "req_params": request.query_params,
+            }, e, is_collect=True)
+            result['message'] = str(e)
+            result['message'] = 500
+
+        return result
 
     async def commodity_image_generate(self, request: Request):
         def saveimage(id_task, _type: str, images: list):

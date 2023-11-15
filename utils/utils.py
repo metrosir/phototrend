@@ -19,3 +19,6 @@ for d, must_exist, what, options in path_dirs:
         d = os.path.abspath(d)
         sys.path.append(d)
         paths[what] = d
+def is_torch2_available():
+    import torch.nn.functional as f
+    return hasattr(f, "scaled_dot_product_attention")
