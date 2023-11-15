@@ -248,11 +248,9 @@ class Inpainting:
                 contr_info.pop('image')
                 contr_info.pop('scale')
                 contr_info.pop('model_path')
-                print(1)
                 controlnet.append(
                     ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
                 )
-                print(2)
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
                 torch_dtype=self.torch_dtype,

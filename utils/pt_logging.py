@@ -56,7 +56,10 @@ def log_echo(title: str, msg: object, exception: Exception = None, is_collect: b
                 "level": level,
                 "traceback": traceback_str,
                 "env": PT_ENV}
-    ia_logging.error(f"{title}: {data}", exc_info=True)
+    if level == "info":
+        ia_logging.info(f"{title}: {data}")
+    else:
+        ia_logging.error(f"{title}: {data}", exc_info=True)
     if is_collect:
         def send():
             try:

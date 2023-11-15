@@ -1,3 +1,5 @@
+import pathlib
+
 from .utils import project_dir
 import os
 
@@ -64,6 +66,8 @@ init_model = {
         'weight_name': 'string_to_param',
     }
 }
+
+api_queue_dir = f"{project_dir}/worker_data/api_queue"
 
 COLLECT_URL = os.getenv("COLLECT_URL")
 
