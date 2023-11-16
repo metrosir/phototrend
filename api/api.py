@@ -286,7 +286,7 @@ class Api:
                         "client_host": request.client.host,
                         "host": request.headers['host'],
                         "req_params": str(request.query_params),
-                    }, e, is_collect=True)
+                    }, e, is_collect=False, path=request.url.path)
                     continue
         except Exception as e:
             log_echo("API Error", {
