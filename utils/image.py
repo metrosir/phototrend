@@ -58,6 +58,11 @@ def is_webp_image(image_path):
         return False
 
 
+def open_image_to_pil(image_path, convert='RGB'):
+    image = Image.open(image_path).convert(convert)
+    return image
+
+
 def save_webp_image_with_transparency(image_path, save_path):
     if is_webp_image(image_path):
         image = Image.open(image_path)

@@ -175,22 +175,87 @@ def inpaint2():
             output_list.append(output_image)
             print("Saved image: " + save_name)
 
+def ipadapter():
+    import utils.utils
+    import ip_adapter.ip_adapter
+    from api.api import gpipe, set_model
+    import torch
+    from utils.image import open_image_to_pil
+
+    pos_prompt = "a tube of coverant on a marble surface with flowers in the background and a white marble countertop, (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality"
+    # pos_prompt = "flower,marble table top, (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality"
+    # pos_prompt = "fresh flower"
+    neg_prompt = "(human:1.2),realisticvision-negative-embedding"
+    sampler_name="UniPC"
+    batch_count=1
+    width=768
+    height=1024
+    contr_inp_weight=0.9
+    output='/data1/aigc/phototrend/worker_data/inpaint_output'
+
+    if gpipe is None:
+        pipe = set_model()
+    else:
+        pipe = gpipe
+
+    input_image = '/data1/aigc/phototrend/worker_data/history/api_generate_commodity/10/input/0.png'
+    # input_image = '/data1/aigc/phototrend/worker_data/5178ca50/merge_after_mask_image/0.png'
+    # input_image = '/data1/aigc/phototrend/test/input/inpaint/images/3.png'
+    # input_image = '/data1/aigc/phototrend/test/input/simple_com.png'
+    input_ip_image = '/data1/aigc/phototrend/worker_data/history/api_generate_commodity/10/input/0.png'
+
+    mask = '/data1/aigc/phototrend/worker_data/history/api_generate_commodity/10/input/1.png'
+    # mask = '/data1/aigc/phototrend/test/input/inpaint/masks/3.png'
+    # input_image=open_image_to_pil(input_image)
+    # mask = open_image_to_pil(mask)
+
+    lineart_input_img = lineart_image(input_image=input_image, width=768)
+
+    pipe.set_controlnet_input([
+        # {
+        #     # ipad
+        #     'scale': 0.75,
+        #     'image': Image.open(input_image).convert("RGB"),
+        # },
+        {
+            'scale': 0.7,
+            'image': lineart_input_img
+        }
+    ])
+
+
+
+    image_encoder_path='/data1/aigc/phototrend/models/ip_adapter/image_encoder'
+    # ip_ckpt='/home/joyme/.cache/huggingface/hub/models--metrosir--phototrend/snapshots/0d4fb77858b579e1ea79e4368a94dfa46b70c07e/controlnets/ip-adapter-plus/diffusion_pytorch_model.bin'
+    ip_ckpt='/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/ip-adapter_sd15_plus.pth'
+    device='cuda'
+
+    ## ip_model = ip_adapter.ip_adapter.IPAdapterPlus(pipe.pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
+
+    # pipe.set_ip_adapter(image_encoder_path, ip_ckpt, device, num_tokens=16)
+    # pipe.input_ip_adapter_condition(pil_image=open_image_to_pil(input_ip_image), prompt=pos_prompt, negative_prompt=neg_prompt, scale=1.0)
+
+    pipe.run_inpaint(
+        input_image=input_image,
+        mask_image=mask,
+        prompt=pos_prompt,
+        n_prompt=neg_prompt,
+        ddim_steps=25,
+        cfg_scale=7.5,
+        seed=-1,
+        composite_chk=True,
+        # sampler_name="UniPC",
+        sampler_name=sampler_name,
+        iteration_count=batch_count,
+        width=(int(width) // 8) * 8,
+        height=(int(height) // 8) * 8,
+        strength=contr_inp_weight,
+        eta=31337,
+        output=output,
+        ret_base64=True
+    )
 
 if __name__ == "__main__":
-    import sys
-    import os
-    from utils.utils import project_dir, models_path
-    from PIL import Image
-    from utils.image import encode_to_base64
-    import asyncio
-
-    from utils.pt_logging import log_echo
-
-    log_echo("", Exception("test"))
-    sys.exit(1)
-    # img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/commodity_merge_scene_image/0.png"))
-    # /data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png
-    img = np.array(Image.open("/data1/aigc/phototrend/worker_data/history/b4f2e4be/merge_after_mask_cut_image/0.png"))
-    img = encode_to_base64(img)
-    print(img)
+    ipadapter()
+    pass
 

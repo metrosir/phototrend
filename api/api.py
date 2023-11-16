@@ -242,10 +242,10 @@ class Api:
         log_echo("API Result", {
                 "api": request.url.path,
                 "host": request.client.host,
-                "req_params": request.query_params,
-            })
+                "req_params": str(request.query_params),
+            }, level='info')
         try:
-            if request.query_params['idx'] is None:
+            if 'idx' not in request.query_params:
                 img_list = glob.glob(datadir.api_generate_commodity_dir.format(id_task=request.query_params['id_task'],
                                                                                type="output", ) + "/*.png")
             else:
@@ -259,7 +259,7 @@ class Api:
             log_echo("API Error", {
                 "api": request.url.path,
                 "host": request.client.host,
-                "req_params": request.query_params,
+                "req_params": str(request.query_params),
             }, e, is_collect=True)
             result['message'] = str(e)
             result['message'] = 500

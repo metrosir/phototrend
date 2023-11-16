@@ -39,7 +39,7 @@ from transformers import logging as transformers_logging
 transformers_logging.set_verbosity_warning()
 import warnings
 warnings.filterwarnings("ignore", message="Some weights of the model checkpoint at metrosir/phototrend were not used when initializing ControlNetModel: ['ip_adapter', 'image_proj']")
-
+from typing import List
 
 
 
@@ -239,6 +239,11 @@ class Inpainting:
 
         self.pipe.safety_checker = None
         self.sampler_name = None
+        self.ipadpter_model = None
+        self.device='cuda'
+
+        self.prompt_embeds=None
+        self.negative_prompt_embeds=None
 
     def setup(self):
         try:
@@ -251,50 +256,23 @@ class Inpainting:
                 controlnet.append(
                     ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
                 )
+            # from diffusers import AutoencoderKL
+            # vae_model_path = '/data/aigc/diffusers/scripts/diffusers_model/'
+            # vae = AutoencoderKL.from_pretrained(vae_model_path).to(dtype=torch.float16)
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
+            # self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
                 self.base_model,
+                # vae=vae,
                 torch_dtype=self.torch_dtype,
                 local_files_only=self.local_files_only,
                 controlnet=controlnet,
-                subfolder=self.base_model_sub,
+                # subfolder=self.base_model_sub,
             )
         except Exception as e:
             ia_logging.error(str(e))
             raise ValueError(str(e))
         return self.pipe
 
-
-    def set_ip_adapter(self):
-        from utils.utils import is_torch2_available
-        if is_torch2_available():
-            from .attention_processor import IPAttnProcessor2_0 as IPAttnProcessor, AttnProcessor2_0 as AttnProcessor, \
-                CNAttnProcessor2_0 as CNAttnProcessor
-        else:
-            from .attention_processor import IPAttnProcessor, AttnProcessor, CNAttnProcessor
-        unet = self.pipe.unet
-        attn_procs = {}
-        for name in unet.attn_processors.keys():
-            cross_attention_dim = None if name.endswith("attn1.processor") else unet.config.cross_attention_dim
-            if name.startswith("mid_block"):
-                hidden_size = unet.config.block_out_channels[-1]
-            elif name.startswith("up_blocks"):
-                block_id = int(name[len("up_blocks.")])
-                hidden_size = list(reversed(unet.config.block_out_channels))[block_id]
-            elif name.startswith("down_blocks"):
-                block_id = int(name[len("down_blocks.")])
-                hidden_size = unet.config.block_out_channels[block_id]
-            if cross_attention_dim is None:
-                attn_procs[name] = AttnProcessor()
-            else:
-                attn_procs[name] = IPAttnProcessor(hidden_size=hidden_size, cross_attention_dim=cross_attention_dim,
-                scale=1.0,num_tokens= self.num_tokens).to(self.device, dtype=torch.float16)
-        unet.set_attn_processor(attn_procs)
-        if hasattr(self.pipe, "controlnet"):
-            if isinstance(self.pipe.controlnet, MultiControlNetModel):
-                for controlnet in self.pipe.controlnet.nets:
-                    controlnet.set_attn_processor(CNAttnProcessor(num_tokens=self.num_tokens))
-            else:
-                self.pipe.controlnet.set_attn_processor(CNAttnProcessor(num_tokens=self.num_tokens))
 
 
     def set_textual_inversion(self, model_id, token, weight_name, subfolder=None):
@@ -332,6 +310,39 @@ class Inpainting:
             ia_logging.info("Sampler fallback to DDIM")
             self.pipe.scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
         return self.pipe
+
+    def set_ip_adapter(self, image_encoder_path, ip_ckpt, device='cuda', num_tokens=16):
+        import ip_adapter.ip_adapter
+        self.ipadpter_model = ip_adapter.ip_adapter.IPAdapterPlus(self.pipe, image_encoder_path, ip_ckpt, device, num_tokens=num_tokens)
+
+
+    def input_ip_adapter_condition(self, pil_image, prompt, negative_prompt,clip_image_embeds=None, num_samples=4, scale=1.0):
+        self.ipadpter_model.set_scale(scale)
+        num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
+        if not isinstance(prompt, List):
+            prompt = [prompt] * num_prompts
+        if not isinstance(negative_prompt, List):
+            negative_prompt = [negative_prompt] * num_prompts
+        image_prompt_embeds, uncond_image_prompt_embeds = self.ipadpter_model.get_image_embeds(
+            pil_image=pil_image, clip_image_embeds=clip_image_embeds
+        )
+
+        bs_embed, seq_len, _ = image_prompt_embeds.shape
+        image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
+        image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
+        uncond_image_prompt_embeds = uncond_image_prompt_embeds.repeat(1, num_samples, 1)
+        uncond_image_prompt_embeds = uncond_image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
+        with torch.inference_mode():
+            prompt_embeds_, negative_prompt_embeds_ = self.pipe.encode_prompt(
+                prompt,
+                device=self.device,
+                num_images_per_prompt=num_samples,
+                do_classifier_free_guidance=True,
+                negative_prompt=negative_prompt,
+            )
+            self.prompt_embeds = torch.cat([prompt_embeds_, image_prompt_embeds], dim=1)
+            self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
+        # self.pipe = ip_model.pipe
 
     def run_inpaint(self,
                     input_image,mask_image,
@@ -382,7 +393,7 @@ class Inpainting:
             generator = torch_generator.manual_seed(seed)
             # generator = torch.Generator(device="cpu").manual_seed(1)
             pipe_args_dict = {
-                "prompt": prompt,
+                # "prompt": prompt,
                 "image": init_image,
                 "control_image": self.controlnet_image,
                 "controlnet_conditioning_scale": self.controlnet_scale,
@@ -391,13 +402,22 @@ class Inpainting:
                 "mask_image": mask_image,
                 "num_inference_steps": ddim_steps,
                 "guidance_scale": cfg_scale,
-                "negative_prompt": n_prompt,
+                # "negative_prompt": n_prompt,
                 "generator": generator,
                 "strength": strength,
                 "eta": eta,
             }
-
             ia_logging.info(f"Pipe Args Dict:{pipe_args_dict}")
+            if self.prompt_embeds is not None:
+                pipe_args_dict['prompt_embeds'] = self.prompt_embeds
+            else:
+                pipe_args_dict['prompt'] = prompt
+                ia_logging.info(f"prompt:{prompt}")
+            if self.negative_prompt_embeds is not None:
+                pipe_args_dict['negative_prompt_embeds'] = self.negative_prompt_embeds
+            else:
+                pipe_args_dict['negative_prompt'] = n_prompt
+                ia_logging.info(f"negative_prompt:{n_prompt}")
             output_image = self.pipe(**pipe_args_dict).images[0]
 
             if composite_chk:
@@ -421,7 +441,6 @@ class Inpainting:
             metadata = PngInfo()
             metadata.add_text("parameters", infotext)
 
-            # save_name = "_".join([ia_file_manager.savename_prefix, os.path.basename(inp_model_id), str(seed)]) + ".png"
             if output is not None:
                 pathlib.Path(output).mkdir(parents=True, exist_ok=True)
                 img_idx = len(os.listdir(output))

@@ -6,7 +6,8 @@ project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 models_path = os.path.join(project_dir, "models")
 
 path_dirs = [
-        (os.path.join(project_dir, 'repositories/BLIP'), 'models/blip.py', 'BLIP', [])
+        (os.path.join(project_dir, 'repositories/BLIP'), 'models/blip.py', 'BLIP', []),
+        (os.path.join(project_dir, 'repositories/IP-Adapter'), 'ip_adapter/ip_adapter.py', 'IP-Adapter', []),
     ]
 
 paths = {}
