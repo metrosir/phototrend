@@ -1,5 +1,8 @@
 import logging.config
+import pathlib
+
 from .utils import project_dir
+import datetime
 
 import warnings
 from typing import Union
@@ -32,7 +35,7 @@ def w_error(msg: str):
     pass
 
 
-def log_echo(title: str, msg: object, exception: Exception = None, is_collect: bool = False, level: str = "error"):
+def log_echo(title: str, msg: object, exception: Exception = None, is_collect: bool = False, level: str = "error", path: str = 'phototrend'):
     import requests
     import traceback
     import json
@@ -44,31 +47,62 @@ def log_echo(title: str, msg: object, exception: Exception = None, is_collect: b
         pass
 
     if exception is None:
-        data = {"title": title,
-                "msg": msg,
-                "level": level,
-                "env": PT_ENV}
+        data = {
+            "date": datetime.datetime.now(
+                tz=datetime.timezone(datetime.timedelta(hours=8))
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "title": title,
+            "msg": str(msg),
+            "level": level,
+            "env": PT_ENV}
     else:
         traceback_str = traceback.format_exc()
-        data = {"title": title,
-                "msg": msg,
-                "exception": str(exception),
-                "level": level,
-                "traceback": traceback_str,
-                "env": PT_ENV}
+        data = {
+            "date": datetime.datetime.now(
+                tz=datetime.timezone(datetime.timedelta(hours=8))
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "title": title,
+            "msg": str(msg),
+            "exception": str(exception),
+            "level": level,
+            "traceback": str(traceback_str),
+            "env": PT_ENV}
+
+    data_str = ''
+    try:
+        data_str = json.dumps(data)
+    except Exception as e:
+        ia_logging.error(f"collect_info error: {e}", exc_info=True)
+
     if level == "info":
-        ia_logging.info(f"{title}: {data}")
+        if path is not None:
+            write_file(path, data_str, level=level)
+        else:
+            ia_logging.info(f"{title}: {data}")
     else:
-        ia_logging.error(f"{title}: {data}", exc_info=True)
+        if path is not None:
+            write_file(path, data_str, level=level)
+        else:
+            ia_logging.error(f"{title}: {data}", exc_info=True)
+
     if is_collect:
         def send():
             try:
-                requests.put(COLLECT_URL, data=json.dumps(data), timeout=0.5)
+                requests.put(COLLECT_URL, data=data_str, timeout=0.5)
             except Exception as e:
                 ia_logging.error(f"collect_info error: {e}", exc_info=True)
                 pass
         thread = threading.Thread(target=send)
         thread.start()
+
+
+def write_file(path: str, content: str, level: str = "error"):
+    path = f"/data/log/phototrend/{path}"
+    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+    file_name = f"{path}/{level}.log"
+    with open(file_name, 'a') as f:
+        f.write(content + '\n')
+        f.close()
 
 def draw_text_image(
         input_image: Union[np.ndarray, Image.Image],
