@@ -274,11 +274,20 @@ class Api:
                                                                                type="output", ) + f"/{int(request.query_params['idx'])}.png")
 
             for path in img_list:
-                with Image.open(path) as im:
-                    if im.size == (0, 0):
-                        continue
-                    im = im.convert("RGB")
-                    result['data'].append(encode_to_base64(im))
+                try:
+                    with Image.open(path) as im:
+                        if im.size == (0, 0):
+                            continue
+                        im = im.convert("RGB")
+                        result['data'].append(encode_to_base64(im))
+                except Exception as e:
+                    log_echo("API Error", {
+                        "api": request.url.path,
+                        "client_host": request.client.host,
+                        "host": request.headers['host'],
+                        "req_params": str(request.query_params),
+                    }, e, is_collect=True)
+                    continue
         except Exception as e:
             log_echo("API Error", {
                 "api": request.url.path,
