@@ -366,7 +366,7 @@ class Api:
         req_params['data']['input_images'][0] = req_params['data']['input_images'][0][:100]
         req_params['data']['mask_image'] = req_params['data']['mask_image'][:100]
         req_params = json.dumps(req_params)
-        ia_logging.info(f"Download Time:{download_time}")
+        ia_logging.info(f"id_task:{data['id_task']}, Download Time:{download_time}")
         log_echo("API Params", msg={
             "api": request.url.path,
             "client_host": request.client.host,
@@ -408,25 +408,28 @@ class Api:
                 }
             ])
 
-            ret = pipe.run_inpaint(
-                input_image=input_image,
-                mask_image=mask,
-                prompt=pos_prompt,
-                n_prompt=neg_prompt,
-                ddim_steps=30,
-                cfg_scale=7.5,
-                seed=-1,
-                composite_chk=True,
-                # sampler_name="UniPC",
-                sampler_name=sampler_name,
-                iteration_count=batch_count,
-                width=(int(width) // 8) * 8,
-                height=(int(height) // 8) * 8,
-                strength=contr_inp_weight,
-                eta=31337,
-                output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
-                ret_base64=True
-            )
+            async def pipe_run_inpaint():
+                return await pipe.run_inpaint(
+                    input_image=input_image,
+                    mask_image=mask,
+                    prompt=pos_prompt,
+                    n_prompt=neg_prompt,
+                    ddim_steps=30,
+                    cfg_scale=7.5,
+                    seed=-1,
+                    composite_chk=True,
+                    # sampler_name="UniPC",
+                    sampler_name=sampler_name,
+                    iteration_count=batch_count,
+                    width=(int(width) // 8) * 8,
+                    height=(int(height) // 8) * 8,
+                    strength=contr_inp_weight,
+                    eta=31337,
+                    output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
+                    ret_base64=True
+                )
+            main_task = asyncio.create_task(pipe_run_inpaint())
+            ret = await main_task
         except Exception as e:
             log_echo("API Error", {
                 "api": request.url.path,

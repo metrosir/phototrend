@@ -303,7 +303,7 @@ async def back_host_generate(host, req, output_dir):
     # for host in host_list:
     try:
         print(f"https://{host}{uri}")
-        response = requests.post(f'http://{host}{uri}', headers={
+        response = await requests.post(f'http://{host}{uri}', headers={
             'Content-Type': 'application/json'
         }, data=json.dumps(req))
     except Exception as e:
@@ -311,6 +311,7 @@ async def back_host_generate(host, req, output_dir):
         return False
     if response is False or response == '' or response is None:
         return False
+    print("response:", response)
     rep = response.json()
     if 'data' in rep:
         for img in rep['data']:
