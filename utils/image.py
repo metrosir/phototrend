@@ -1,10 +1,13 @@
 
+import pathlib
+import os
 from PIL import Image, PngImagePlugin
 import base64
 from rembg import remove
 from utils.pt_logging import ia_logging
 from torchvision import transforms
 import numpy as np
+import threading
 
 
 # 制作mask
@@ -138,7 +141,7 @@ def decode_base64_to_image(encoding):
     return image
 
 
-def encode_pil_to_base64(image):
+def encode_pil_to_base64(image, decode_utf_8=False):
     with io.BytesIO() as output_bytes:
 
         use_metadata = False
@@ -151,6 +154,8 @@ def encode_pil_to_base64(image):
 
         bytes_data = output_bytes.getvalue()
 
+    if decode_utf_8:
+        return base64.b64encode(bytes_data).decode("utf-8")
     return base64.b64encode(bytes_data)
 
 
@@ -168,3 +173,12 @@ def encode_to_base64(image):
         return encode_np_to_base64(image)
     else:
         return ""
+
+
+def save_output_image_to_pil(img, output_dir):
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
+    lock = threading.Lock()
+    lock.acquire()
+    img_idx = len(os.listdir(output_dir))
+    lock.release()
+    img.save(os.path.join(output_dir, f'{img_idx}.png'), format="PNG", quality=100)

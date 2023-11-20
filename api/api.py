@@ -1,3 +1,6 @@
+
+import asyncio
+import copy
 import glob
 import json
 import sys
@@ -8,7 +11,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSO
 from typing import Optional
 import os
 import pathlib
-from utils.image import convert_png_to_mask, mask_invert, remove_bg, decode_base64_to_image, encode_to_base64
+from utils.image import convert_png_to_mask, mask_invert, remove_bg, decode_base64_to_image, encode_to_base64, encode_pil_to_base64
 import utils.datadir as datadir
 # from utils.req import interrogate
 from utils.utils import project_dir
@@ -18,7 +21,7 @@ from utils.pt_logging import ia_logging, log_echo
 import json
 # from .models import *
 
-from utils.constant import mode_params, self_innovate_mode, init_model, api_queue_dir
+from utils.constant import mode_params, self_innovate_mode, init_model, api_queue_dir, hosts
 from scripts.inpaint import Inpainting
 from scripts.piplines.controlnet_pre import lineart_image
 from utils.cmd_args import opts as shared
@@ -121,7 +124,30 @@ def print_log(request: Request, **kwargs):
     return tmp
 
 
-def call_queue_task():
+def generate_count(count: int):
+    if count is None or count < 1:
+        return count, 0, []
+    from utils.constant import hosts
+    import utils.utils as utils
+    if not hosts or hosts is None:
+        return count, 0, []
+    hosts_list = hosts.split(",")
+    if len(hosts_list) < 1:
+        return count, 0
+
+    local_ip = utils.get_local_ip()
+    if hosts.find(local_ip) != -1:
+        hosts_list.remove(local_ip)
+
+    dis = count // (len(hosts_list)+1)
+    current_host = dis
+    if dis * (len(hosts_list)+1) != count:
+        current_host = dis + 1
+    return current_host, dis, hosts_list
+
+
+async def call_queue_task():
+    from utils.req import async_back_host_generate
     while 1:
         data = None
         try:
@@ -129,12 +155,31 @@ def call_queue_task():
             if origin_data is not None:
                 log_echo("Call Queue Task: ", msg=origin_data, level='info', path='call_queue_task')
                 data = json.loads(origin_data)
+
                 input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height \
                     = commodity_image_generate_api_params(data['data'], id_task=data['id_task'])
                 if type(input_image) is str:
                     input_image = decode_base64_to_image(input_image)
                 if type(mask) is str:
                     mask = decode_base64_to_image(mask)
+
+                c_count, d_count, host_list = generate_count(batch_count)
+                sub_task = None
+                if c_count > 0:
+                    dis_data = copy.deepcopy(data)
+                    dis_data['data']['input_images'] = [
+                        encode_pil_to_base64(input_image, True),
+                    ]
+                    dis_data['data']['mask_image'] = encode_pil_to_base64(mask, True)
+                    dis_data['data']['preset'][0]['count'] = d_count
+                    batch_count = c_count
+
+                    # async def async_back_host_generate(host_list, dis_data, output_dir):
+                    #     # todo
+                    #     # return await back_host_generate(host_list, dis_data, output_dir=output_dir)
+                    #     return await back_host_generate(host_list, dis_data, output_dir=output_dir)
+                    print("host_list:", host_list)
+                    sub_task = asyncio.create_task(async_back_host_generate(host_list, dis_data, datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", )))
 
                 pos_prompt = pos_prompt % interrogate.interrogate(input_image) if '%s' in pos_prompt else pos_prompt
 
@@ -156,25 +201,32 @@ def call_queue_task():
                     }
                 ])
 
-                pipe.run_inpaint(
-                    input_image=input_image,
-                    mask_image=mask,
-                    prompt=pos_prompt,
-                    n_prompt=neg_prompt,
-                    ddim_steps=30,
-                    cfg_scale=7.5,
-                    seed=-1,
-                    composite_chk=True,
-                    # sampler_name="UniPC",
-                    sampler_name=sampler_name,
-                    iteration_count=batch_count,
-                    width=(int(width) // 8) * 8,
-                    height=(int(height) // 8) * 8,
-                    strength=contr_inp_weight,
-                    eta=31337,
-                    output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
-                    ret_base64=True
-                )
+                async def pipe_run_inpaint():
+                    await pipe.run_inpaint(
+                        input_image=input_image,
+                        mask_image=mask,
+                        prompt=pos_prompt,
+                        n_prompt=neg_prompt,
+                        ddim_steps=30,
+                        cfg_scale=7.5,
+                        seed=-1,
+                        composite_chk=True,
+                        # sampler_name="UniPC",
+                        sampler_name=sampler_name,
+                        iteration_count=batch_count,
+                        width=(int(width) // 8) * 8,
+                        height=(int(height) // 8) * 8,
+                        strength=contr_inp_weight,
+                        eta=31337,
+                        output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
+                        ret_base64=True
+                    )
+                main_task = asyncio.create_task(pipe_run_inpaint())
+                if sub_task is not None:
+                    # todo 判断子任务是否执行完成，如果未执行完，需重新加入队列
+                    sub_task_result = await sub_task
+                    print("sub_task_result:", sub_task_result)
+                await main_task
                 queue.complete(origin_data)
         except Exception as e:
             log_echo("API Call Queue Error", msg=data, exception=e, is_collect=True, path='call_queue_task')
@@ -314,6 +366,7 @@ class Api:
         req_params['data']['input_images'][0] = req_params['data']['input_images'][0][:100]
         req_params['data']['mask_image'] = req_params['data']['mask_image'][:100]
         req_params = json.dumps(req_params)
+        ia_logging.info(f"Download Time:{download_time}")
         log_echo("API Params", msg={
             "api": request.url.path,
             "client_host": request.client.host,

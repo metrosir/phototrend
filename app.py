@@ -410,4 +410,7 @@ if __name__ == '__main__':
     # enable_queue=True,
     app.user_middleware = [x for x in app.user_middleware if x.cls.__name__ != 'CORSMiddleware']
     Api.Api(app)
-    Api.call_queue_task()
+    import asyncio
+    asyncio.run(Api.call_queue_task())
+    while 1:
+        time.sleep(1)

@@ -8,7 +8,7 @@ import PIL.ImageOps
 import requests
 from typing import Union
 from utils.cmd_args import opts as shared
-from utils.image import auto_resize_to_pil, read_image_to_np, encode_to_base64
+from utils.image import auto_resize_to_pil, read_image_to_np, encode_to_base64, save_output_image_to_pil
 from utils.datadir import generate_inpaint_image_dir
 import scripts.devices as devices
 
@@ -344,7 +344,7 @@ class Inpainting:
             self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
         # self.pipe = ip_model.pipe
 
-    def run_inpaint(self,
+    async def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False):
@@ -442,10 +442,10 @@ class Inpainting:
             metadata.add_text("parameters", infotext)
 
             if output is not None:
-                pathlib.Path(output).mkdir(parents=True, exist_ok=True)
-                img_idx = len(os.listdir(output))
-                save_name=os.path.join(output, f"{img_idx}.png")
-                output_image.save(save_name, pnginfo=metadata)
+                # img_idx = len(os.listdir(output))
+                # save_name=os.path.join(output, f"{img_idx}.png")
+                # output_image.save(save_name, pnginfo=metadata)
+                save_output_image_to_pil(output_image, output)
                 if ret_base64:
                     output_list.append(encode_to_base64(output_image))
                 else:

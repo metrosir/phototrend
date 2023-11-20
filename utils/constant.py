@@ -73,3 +73,11 @@ COLLECT_URL = os.getenv("COLLECT_URL")
 
 # pt_test, pt_dev, pt_prod
 PT_ENV = os.getenv("PT_ENV")
+PT_PROD = "pt_prod"
+
+is_prod = False
+if PT_ENV == PT_PROD:
+    is_prod = True
+
+# 1.1.1.1,2.2.2.2
+hosts = os.getenv("PT_BACK_HOSTS")

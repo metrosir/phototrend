@@ -7,7 +7,7 @@ import os
 import copy
 import utils.datadir as datadir
 
-from utils.image import image_to_base64
+from utils.image import image_to_base64, decode_base64_to_image, save_output_image_to_pil
 from utils.cmd_args import opts
 
 # 'http://10.61.158.18:7860'
@@ -289,3 +289,45 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
         return generate_imgs
     else:
         return None
+
+import asyncio
+
+async def back_host_generate(host, req, output_dir):
+    from .pt_logging import log_echo
+    # if len(host_list) < 1:
+    #     return False
+
+    # port = '7777'
+    uri = '/v1/commodity_image/generate'
+    # print("host_list:", host_list)
+    # for host in host_list:
+    try:
+        print(f"https://{host}{uri}")
+        response = requests.post(f'http://{host}{uri}', headers={
+            'Content-Type': 'application/json'
+        }, data=json.dumps(req))
+    except Exception as e:
+        log_echo("back_host_generate error", msg=str(e), is_collect=True, level="error")
+        return False
+    if response is False or response == '' or response is None:
+        return False
+    rep = response.json()
+    if 'data' in rep:
+        for img in rep['data']:
+            save_output_image_to_pil(decode_base64_to_image(img), output_dir)
+            # decode_base64_to_image(img).save(f'{output_dir}/{img["name"]}')
+        return True
+    return False
+
+
+async def async_back_host_generate(host_list, req, output_dir):
+    if len(host_list) < 1:
+        return False
+
+    tasks = []
+    for host in host_list:
+        task = asyncio.create_task(back_host_generate(host, req, output_dir))
+        tasks.append(task)
+
+    results = await asyncio.gather(*tasks)
+    return all(results)

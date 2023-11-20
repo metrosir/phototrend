@@ -23,3 +23,16 @@ for d, must_exist, what, options in path_dirs:
 def is_torch2_available():
     import torch.nn.functional as f
     return hasattr(f, "scaled_dot_product_attention")
+
+
+def get_local_ip():
+    import socket
+    from .pt_logging import ia_logging
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(('8.8.8.8', 80))
+        local_ip = sock.getsockname()[0]
+        return local_ip
+    except socket.error as e:
+        ia_logging.error(f"Error: {e}", exc_info=True)
+        return None
