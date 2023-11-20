@@ -29,6 +29,7 @@
             <option value="1">768x1024</option>
             <option value="2">800x1424</option>
             <option value="3">800x800</option>
+            <option value="4">1000x1500</option>
         </select>
         <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
         <input type="button" id="sync_img" value="同步产品图">
@@ -75,6 +76,12 @@
                 'height': 800,
                 'c_width': 400,
                 'c_height': 400
+            },
+            4: {
+                'width': 1000,
+                'height': 1500,
+                'c_width': 500,
+                'c_height': 750
             },
         }
         var pro_img = ''

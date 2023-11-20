@@ -530,6 +530,8 @@ class Api:
                 return FileResponse(f"{project_dir}/worker_data/template/768x1024.png")
             elif size_type == 2:
                 return FileResponse(f"{project_dir}/worker_data/template/800x1422.jpeg")
+            elif size_type == 4:
+                return FileResponse(f"{project_dir}/worker_data/template/1000x1500.png")
             else:
                 return FileResponse(f"{project_dir}/worker_data/template/800x800.png")
         except Exception as e:
