@@ -201,32 +201,33 @@ async def call_queue_task():
                     }
                 ])
 
-                async def pipe_run_inpaint():
-                    await pipe.run_inpaint(
-                        input_image=input_image,
-                        mask_image=mask,
-                        prompt=pos_prompt,
-                        n_prompt=neg_prompt,
-                        ddim_steps=30,
-                        cfg_scale=7.5,
-                        seed=-1,
-                        composite_chk=True,
-                        # sampler_name="UniPC",
-                        sampler_name=sampler_name,
-                        iteration_count=batch_count,
-                        width=(int(width) // 8) * 8,
-                        height=(int(height) // 8) * 8,
-                        strength=contr_inp_weight,
-                        eta=31337,
-                        output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
-                        ret_base64=True
-                    )
-                main_task = asyncio.create_task(pipe_run_inpaint())
+                async def pipe_run_inpaint(input_image,mask,pos_prompt,neg_prompt,ddim_steps,cfg_scale,seed,composite_chk,sampler_name,batch_count,width,height,contr_inp_weight,eta,output,ret_base64):
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(None, pipe.run_inpaint, input_image, mask, pos_prompt, neg_prompt,ddim_steps,cfg_scale,seed,composite_chk,width,height,output,sampler_name,batch_count,contr_inp_weight,eta,ret_base64)
+                    return result
+
+                await pipe_run_inpaint(
+                    input_image=input_image,
+                    mask=mask,
+                    pos_prompt=pos_prompt,
+                    neg_prompt=neg_prompt,
+                    ddim_steps=30,
+                    cfg_scale=7.5,
+                    seed=-1,
+                    composite_chk=True,
+                    sampler_name=sampler_name,
+                    batch_count=batch_count,
+                    width=(int(width) // 8) * 8,
+                    height=(int(height) // 8) * 8,
+                    contr_inp_weight=contr_inp_weight,
+                    eta=31337,
+                    output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
+                    ret_base64=True
+                )
                 if sub_task is not None:
                     # todo 判断子任务是否执行完成，如果未执行完，需重新加入队列
                     sub_task_result = await sub_task
                     print("sub_task_result:", sub_task_result)
-                await main_task
                 queue.complete(origin_data)
         except Exception as e:
             log_echo("API Call Queue Error", msg=data, exception=e, is_collect=True, path='call_queue_task')
@@ -409,7 +410,7 @@ class Api:
             ])
 
             async def pipe_run_inpaint():
-                return await pipe.run_inpaint(
+                return pipe.run_inpaint(
                     input_image=input_image,
                     mask_image=mask,
                     prompt=pos_prompt,

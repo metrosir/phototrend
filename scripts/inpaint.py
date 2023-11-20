@@ -344,7 +344,7 @@ class Inpainting:
             self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
         # self.pipe = ip_model.pipe
 
-    async def run_inpaint(self,
+    def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False):

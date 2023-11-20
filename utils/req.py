@@ -291,6 +291,8 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
         return None
 
 import asyncio
+import aiohttp
+
 
 async def back_host_generate(host, req, output_dir):
     from .pt_logging import log_echo
@@ -299,27 +301,21 @@ async def back_host_generate(host, req, output_dir):
 
     # port = '7777'
     uri = '/v1/commodity_image/generate'
-    # print("host_list:", host_list)
-    # for host in host_list:
     try:
-        print(f"https://{host}{uri}")
-        response = await requests.post(f'http://{host}{uri}', headers={
-            'Content-Type': 'application/json'
-        }, data=json.dumps(req))
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f'http://{host}{uri}', headers={
+                'Content-Type': 'application/json'
+            }, data=json.dumps(req)) as response:
+                if response.status == 200:
+                    rep = await response.json()
+                    if 'data' in rep:
+                        for img in rep['data']:
+                            save_output_image_to_pil(decode_base64_to_image(img), output_dir)
+                        return True
+                return False
     except Exception as e:
         log_echo("back_host_generate error", msg=str(e), is_collect=True, level="error")
         return False
-    if response is False or response == '' or response is None:
-        return False
-    print("response:", response)
-    rep = response.json()
-    if 'data' in rep:
-        for img in rep['data']:
-            save_output_image_to_pil(decode_base64_to_image(img), output_dir)
-            # decode_base64_to_image(img).save(f'{output_dir}/{img["name"]}')
-        return True
-    return False
-
 
 async def async_back_host_generate(host_list, req, output_dir):
     if len(host_list) < 1:
