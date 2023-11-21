@@ -189,15 +189,20 @@ async def call_queue_task():
                     pipe = gpipe
 
                 lineart_input_img = lineart_image(input_image=input_image, width=width)
-                saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img])
+                lineart_mask_img = lineart_image(input_image=mask, width=width)
+                saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, lineart_mask_img])
                 pipe.set_controlnet_input([
-                    {
-                        'scale': contr_ipa_weight,
-                        'image': input_image,
-                    },
+                    # {
+                    #     'scale': contr_ipa_weight,
+                    #     'image': input_image,
+                    # },
                     {
                         'scale': contr_lin_weight,
                         'image': lineart_input_img
+                    },
+                    {
+                        'scale': 0.55,
+                        'image': lineart_mask_img
                     }
                 ])
 
@@ -397,15 +402,20 @@ class Api:
                 pipe = gpipe
 
             lineart_input_img = lineart_image(input_image=input_image, width=width)
-            saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img])
+            lineart_mask_img = lineart_image(input_image=mask, width=width)
+            saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, lineart_mask_img])
             pipe.set_controlnet_input([
-                {
-                    'scale': contr_ipa_weight,
-                    'image': input_image,
-                },
+                # {
+                #     'scale': contr_ipa_weight,
+                #     'image': input_image,
+                # },
                 {
                     'scale': contr_lin_weight,
                     'image': lineart_input_img
+                },
+                {
+                    'scale': 0.55,
+                    'image': lineart_mask_img
                 }
             ])
 

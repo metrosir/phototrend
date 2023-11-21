@@ -94,17 +94,21 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
 
         from PIL import Image
 
-        scene_im = Image.open(comm_merge_scene_im)
-        scene_im = scene_im.convert("RGB")
+        # scene_im = Image.open(comm_merge_scene_im)
+        # scene_im = scene_im.convert("RGB")
         Api.gpipe.set_controlnet_input(
             [
-                {
-                    'scale': contr_ipa_weight,
-                    'image': scene_im,
-                },
+                # {
+                #     'scale': contr_ipa_weight,
+                #     'image': scene_im,
+                # },
                 {
                     'scale': contr_lin_weight,
                     'image': lineart_image(input_image=comm_merge_scene_im, width=width)
+                },
+                {
+                    'scale': 0.55,
+                    'image': lineart_image(input_image=mask_im, width=width)
                 }
             ]
         )
@@ -115,7 +119,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             prompt=pos_prompt,
             n_prompt=neg_prompt,
             ddim_steps=30,
-            cfg_scale=7.5,
+            cfg_scale=8.5,
             seed=-1,
             composite_chk=True,
             # sampler_name="Euler a",

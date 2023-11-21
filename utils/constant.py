@@ -31,9 +31,11 @@ mode_params = {
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     },
     self_innovate_mode: {
-        'inpaint_weight': 0.95,
+        # 'inpaint_weight': 0.95,
+        'inpaint_weight': 1,
         'ip-adapter_weight': 0.75,
-        'lineart_weight': 0.7,
+        # 'lineart_weight': 0.7,
+        'lineart_weight': 0.5,
         'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     }
@@ -42,14 +44,22 @@ mode_params = {
 init_model = {
     'base_mode':'metrosir/realistic',
     'controlnets': [
+        # {
+        #     'low_cpu_mem_usage': False,
+        #     'device_map': None,
+        #     'model_path': 'metrosir/phototrend',
+        #     "subfolder": 'controlnets/ip-adapter-plus',
+        #     'scale': [],
+        #     'image': None,
+        #     'local_files_only': False
+        # },
         {
             'low_cpu_mem_usage': False,
-            'device_map': None,
             'model_path': 'metrosir/phototrend',
-            "subfolder": 'controlnets/ip-adapter-plus',
+            'subfolder': 'controlnets/lineart-fp16',
             'scale': [],
+            'device_map': None,
             'image': None,
-            'local_files_only': False
         },
         {
             'low_cpu_mem_usage': False,
