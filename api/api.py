@@ -163,6 +163,7 @@ async def call_queue_task():
                 if type(mask) is str:
                     mask = decode_base64_to_image(mask)
 
+                ia_logging.info(f"Call task:{data['id_task']}, data:{data}")
                 c_count, d_count, host_list = generate_count(batch_count)
                 sub_task = None
                 if c_count > 0:
