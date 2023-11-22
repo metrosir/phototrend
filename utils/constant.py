@@ -64,7 +64,7 @@ init_model = {
         {
             'low_cpu_mem_usage': False,
             'model_path': 'metrosir/phototrend',
-            'subfolder': 'controlnets/lineart-fp16',
+            'subfolder': 'controlnets/lineart',
             'scale': [],
             'device_map': None,
             'image': None,
