@@ -26,9 +26,9 @@ def rmbg(image, is_result=False) -> str:
         pathlib.Path(datadir.commodity_rembg_image_dir).mkdir(parents=True, exist_ok=True)
         pathlib.Path(datadir.commodity_rembg_mask_image_dir).mkdir(parents=True, exist_ok=True)
 
-    commodity_image_path = f'{datadir.commodity_image_dir}/{datadir.get_file_idx(True)}.png'
-    commodity_rembg_image_path = f'{datadir.commodity_rembg_image_dir}/{datadir.get_file_idx(True)}.png'
-    commodity_rembg_mask_image_path = f'{datadir.commodity_rembg_mask_image_dir}/{datadir.get_file_idx(True)}.png'
+    commodity_image_path = f'{datadir.commodity_image_dir}/{datadir.get_file_idx(is_star=True, check_dir=datadir.commodity_image_dir)}.png'
+    commodity_rembg_image_path = f'{datadir.commodity_rembg_image_dir}/{datadir.get_file_idx(True, check_dir=datadir.commodity_image_dir)}.png'
+    # commodity_rembg_mask_image_path = f'{datadir.commodity_rembg_mask_image_dir}/{datadir.get_file_idx(True)}.png'
 
     if is_result:
         image.save(commodity_image_path)
@@ -78,7 +78,11 @@ def upload_rem_img_result(img):
 
 
 def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height, contr_scribble_weight, ddim_steps, sampler_name):
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height, contr_scribble_weight, ddim_steps, sampler_name, template_name):
+
+    if template_name is None or template_name == '':
+        raise Exception("模板名称不能为空")
+
     if mode not in constant.generate_mode:
         raise Exception("mode not in constant.generate_mode")
     if mode == constant.sd_mode:
@@ -93,15 +97,16 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             pathlib.Path(generate_image_sub_dir).mkdir(parents=True, exist_ok=True)
         comm_merge_scene_im = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
         mask_im = f'{datadir.merge_after_mask_cut_image_dir}/{datadir.get_file_idx()}.png'
+        scene_im = f'{datadir.scene_image_dir}/{datadir.get_file_idx()}.png'
+        controlnet_images_dir = datadir.controlnet_images.format(uuid=datadir.uuid, idx=datadir.get_file_idx())
 
         def save_image(images):
-            dir = datadir.controlnet_images.format(uuid=datadir.uuid, idx=datadir.get_file_idx())
-            if not pathlib.Path(dir).exists():
-                pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
-            file_list =os.listdir(dir)
+            if not pathlib.Path(controlnet_images_dir).exists():
+                pathlib.Path(controlnet_images_dir).mkdir(parents=True, exist_ok=True)
+            file_list =os.listdir(controlnet_images_dir)
             for images_idx, image in enumerate(images):
                 # np 格式图像存储
-                image.save(f'{dir}/{len(file_list)+images_idx}.png')
+                image.save(f'{controlnet_images_dir}/{len(file_list)+images_idx}.png')
 
         if Api.gpipe is None:
             Api.gpipe = Api.set_model()
@@ -139,7 +144,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         # Api.gpipe.input_ip_adapter_condition(pil_image=image_utils.open_image_to_pil(comm_merge_scene_im), prompt=pos_prompt,
         #                                 negative_prompt=neg_prompt, scale=contr_ipa_weight)
 
-        return Api.gpipe.run_inpaint(
+        res = Api.gpipe.run_inpaint(
             input_image=comm_merge_scene_im,
             mask_image=mask_im,
             prompt=pos_prompt,
@@ -157,6 +162,62 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             eta=31337,
             output=generate_image_sub_dir
         )
+        if template_name is not None and template_name != '':
+            import shutil
+            base = os.path.join(datadir.template_test_images, template_name)
+
+            # 将文件MV到模板目录下
+            if not os.path.exists(base):
+                os.makedirs(base)
+
+            output = os.path.join(base, 'output')
+            if not os.path.exists(output):
+                os.makedirs(output)
+            if not os.path.exists(os.path.join(output, os.path.basename(generate_image_sub_dir))):
+                shutil.copytree(generate_image_sub_dir, os.path.join(output, os.path.basename(generate_image_sub_dir)))
+            else:
+                outlist = os.listdir(os.path.join(output, os.path.basename(generate_image_sub_dir)))
+                idx = len(outlist)
+                for f in os.listdir(generate_image_sub_dir):
+                    shutil.copy(os.path.join(generate_image_sub_dir, f), os.path.join(output, os.path.basename(generate_image_sub_dir), f'{idx}.png'))
+                    idx = idx + 1
+            filelist = [f for f in os.listdir(generate_image_sub_dir)]
+            for f in filelist:
+                os.remove(os.path.join(generate_image_sub_dir, f))
+
+            scene = os.path.join(base, 'scene')
+            if not os.path.exists(scene):
+                os.makedirs(scene)
+            shutil.copy(scene_im, scene)
+
+            merge = os.path.join(base, 'merge')
+            if not os.path.exists(merge):
+                os.makedirs(merge)
+            shutil.copy(comm_merge_scene_im, merge)
+
+            mask = os.path.join(base, 'mask')
+            if not os.path.exists(mask):
+                os.makedirs(mask)
+            shutil.copy(mask_im, mask)
+
+            controlnet_img = os.path.join(base, 'controlnet')
+            if not os.path.exists(controlnet_img):
+                os.makedirs(controlnet_img)
+            if not os.path.exists(os.path.join(controlnet_img, os.path.basename(controlnet_images_dir))):
+                shutil.copytree(controlnet_images_dir, os.path.join(controlnet_img, os.path.basename(controlnet_images_dir)))
+            else:
+                merge_list = os.listdir(datadir.commodity_merge_scene_image_dir)
+                if len(os.listdir(datadir.commodity_merge_scene_image_dir)) > len(os.listdir(controlnet_img)):
+                    outlist = os.listdir(os.path.join(controlnet_img, os.path.basename(controlnet_images_dir)))
+                    idx = len(outlist)
+                    for f in os.listdir(controlnet_images_dir):
+                        shutil.copy(os.path.join(controlnet_images_dir, f), os.path.join(controlnet_img, os.path.basename(controlnet_images_dir), f'{idx}.png'))
+                        idx = idx + 1
+            filelist = [f for f in os.listdir(controlnet_images_dir)]
+            for f in filelist:
+                os.remove(os.path.join(controlnet_images_dir, f))
+
+        return res
 
 
 def save_commdity_tmpe(template_name, template_img, template_size, shape, coordinate, type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, width, height, contr_scribble_weight, ddim_steps, sampler_name):
@@ -276,7 +337,6 @@ def commodity_tab():
                                                     interactive=True)
 
                             def g_wh_change(size):
-                                print("g_wh_change:", size)
                                 return gr.Text.update(value=size)
                             g_width = gr.Text(elem_id="g_width",
                                               value=768, visible=False, interactive=True)
@@ -386,22 +446,77 @@ def commodity_tab():
                                                 pass
                                         api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
                             with gr.TabItem("模板实验"):
-                                with gr.Box():
-                                    # import scripts.templatemanager as templatemanager
-                                    stylesdata = gr.Dataframe(
-                                        value=tm.get_styles,
-                                        col_count=(len(tm.display_columns), 'fixed'),
-                                        wrap=True, max_rows=1000, show_label=False, interactive=True,
-                                        elem_id="style_editor_grid"
-                                    )
-                                    stylesdata.input(fn=tm.update_styles, inputs=[stylesdata], outputs=[stylesdata])
+                                with gr.Tabs():
+                                    with gr.TabItem("模板"):
+                                        # import scripts.templatemanager as templatemanager
+                                        stylesdata = gr.Dataframe(
+                                            value=tm.get_styles,
+                                            col_count=(len(tm.display_columns), 'fixed'),
+                                            wrap=True, max_rows=1000, show_label=False, interactive=True,
+                                            elem_id="style_editor_grid"
+                                        )
+                                        stylesdata.input(fn=tm.update_styles, inputs=[stylesdata], outputs=[stylesdata])
+                                    with gr.TabItem("历史记录"):
+                                        def index_list(name):
+                                            pth = os.path.join(datadir.template_test_images, name, 'output')
+                                            if not os.path.exists(pth):
+                                                return None
+                                            list = os.listdir(pth)
+                                            list.insert(0, '请选择')
+                                            # glob.glob(datadir.template_test_images.format(name=name) + '/*')
+                                            return gr.Dropdown.update(choices=list, value=list[0] if len(list) > 0 else None, interactive=True)
+                                        def search_template(name, idx):
+                                            output = os.path.join(datadir.template_test_images, name, 'output', idx)
+                                            controlnet = os.path.join(datadir.template_test_images, name, 'controlnet',
+                                                                      idx)
+                                            mask = os.path.join(datadir.template_test_images, name, 'mask', f'{idx}.png')
+                                            scene = os.path.join(datadir.template_test_images, name, 'scene', f'{idx}.png')
+                                            merge = os.path.join(datadir.template_test_images, name, 'merge', f'{idx}.png')
+
+
+                                            if not os.path.exists(output):
+                                                return None
+                                            output_list = os.listdir(output)
+                                            control_list = os.listdir(controlnet)
+                                            return [os.path.join(output, f) for f in output_list], \
+                                                [os.path.join(controlnet, f) for f in control_list], \
+                                                [mask], \
+                                                [scene], \
+                                                [merge]
+
+                                        with gr.Row():
+                                            with gr.Column(min_width=80):
+                                                with gr.Row():
+                                                    with gr.Column():
+                                                        h_template_name = gr.Text(label='模板名称', elem_id="s_template_name")
+                                                    with gr.Column():
+                                                        h_f_idx = gr.Dropdown(label='索引', choices=[],)
+                                                    with gr.Column():
+                                                        h_template_name.change(fn=index_list, inputs=[h_template_name], outputs=[h_f_idx])
+                                                        h_button = gr.Button('搜索(Refresh)', variant='primary')
+                                        with gr.Row():
+                                            with gr.Column(min_width=160):
+                                                h_template_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, height=250, label='模板图片', elem_id="h_template_img")
+                                                h_template_mask_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
+                                                                              height=250, label='mask',
+                                                                              elem_id="h_template_input",)
+                                                h_template_controlnet_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, label='controlnet', height=250)
+                                                h_merge_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
+                                                                         height=250, label='合成图像',
+                                                                         elem_id="h_merge_img",)
+                                            with gr.Column():
+                                                h_output_img = gr.Gallery(preview=True, show_label=True, columns=4, rows=4,
+                                                                          height=500, label='输出图像',
+                                                                          elem_id="h_output_img", object_fit="cover")
+                                        h_button.click(fn=search_template, inputs=[h_template_name, h_f_idx],
+                                                       outputs=[h_output_img, h_template_controlnet_input, h_template_mask_input, h_template_img, h_merge_img])
 
 
             output_message = gr.Markdown()
 
             run_generate.click(fn=generate,
                                inputs=[mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name],
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name, template_name],
                                outputs=[output_generate_images])
             # template_name, template_img, coordinate, type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, width, height, contr_scribble_weight, ddim_steps, sampler_name
             run_save_temp.click(fn=save_commdity_tmpe, inputs=[template_name, template_img, template_size, shape, coordinate, template_type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name], outputs=[stylesdata])

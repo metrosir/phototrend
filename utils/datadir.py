@@ -26,6 +26,8 @@ deft_scene_image = f'{history}/def_scene_image/'
 # 场景图>商品图>合并图>mask图（扣除背景制作mask）> mask图（mask反转）>生成图
 # 商品图
 commodity_image_dir = history + '/{uuid}/commodity_image'.format(uuid=uuid)
+# 场景图
+scene_image_dir = history + '/{uuid}/scene_image'.format(uuid=uuid)
 # 商品图去背
 commodity_rembg_image_dir = history + '/{uuid}/commodity_rembg_image'.format(uuid=uuid)
 commodity_rembg_mask_image_dir = history + '/{uuid}/commodity_rembg_mask_image'.format(uuid=uuid)
@@ -37,6 +39,8 @@ mask_image_dir = history + '/{uuid}/mask_image'.format(uuid=uuid)
 # mask反转
 merge_after_mask_cut_image_dir = history + '/{uuid}/merge_after_mask_cut_image'.format(uuid=uuid)
 controlnet_images = history + '/{uuid}/controlnet_images/{idx}'
+template_test_images = history + '/template_test_images/'
+
 # generate 的图片
 generate_image_dir = history + '/{uuid}/generate_image/{idx}'
 generate_glob_img = history + '/*/generate_image/*/*.png'
@@ -60,8 +64,7 @@ generate_inpaint_image_dir = history = f"{project_dir}/worker_data/inpaint_outpu
 pathlib.Path(generate_inpaint_image_dir).mkdir(parents=True, exist_ok=True)
 
 
-
-def get_file_idx(is_star=False, check_dir=commodity_image_dir) -> str:
+def get_file_idx(is_star=False, check_dir=commodity_merge_scene_image_dir) -> str:
     if not os.path.exists(check_dir):
         raise Exception("base dir is not exist")
     dirs = os.listdir(check_dir)

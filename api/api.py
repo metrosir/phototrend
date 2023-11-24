@@ -473,9 +473,22 @@ class Api:
             pathlib.Path(datadir.merge_after_mask_image_dir).mkdir(parents=True, exist_ok=True)
             pathlib.Path(datadir.mask_image_dir).mkdir(parents=True, exist_ok=True)
             pathlib.Path(datadir.merge_after_mask_cut_image_dir).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(datadir.scene_image_dir).mkdir(parents=True, exist_ok=True)
+
+        # 场景图
+        if img_type == 3:
+            scene_image_dir = f'{datadir.scene_image_dir}/{datadir.get_file_idx()}.png'
+            try:
+                contents = file.file.read()
+                with open(scene_image_dir, 'wb') as f:
+                    f.write(contents)
+            except Exception as e:
+                error_message = str(e)
+                return {"data": f"{scene_image_dir}, type:{img_type}, error:{error_message}"}
+            return {"data": f"{scene_image_dir}, type:{img_type}"}
 
         # 制作mask
-        if img_type == 2:
+        elif img_type == 2:
             try:
                 contents = file.file.read()
                 after_mask_path = f'{datadir.merge_after_mask_image_dir}/{datadir.get_file_idx()}.png'
@@ -486,17 +499,13 @@ class Api:
 
                 convert_png_to_mask(after_mask_path, mask_path)
                 mask_invert(mask_path, merge_after_mask_cut_image_dir)
-                # remove_bg(after_mask_path, mask_path, True, False)
-                # mask_invert(mask_path, after_mask_path)
-
-                # convert_png_to_mask(mask_path, after_mask_path)
             except Exception as e:
                 error_message = str(e)
                 return {"data": f"{mask_path}, type:{img_type}, error:{error_message}"}
             return {"data": f"{mask_path}, type:{img_type}"}
-        # 场景图
+        # 场景合并商品图
         else:
-            i_path = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx()}.png'
+            i_path = f'{datadir.commodity_merge_scene_image_dir}/{datadir.get_file_idx(is_star=True)}.png'
             contents = file.file.read()
             with open(i_path, 'wb') as f:
                 f.write(contents)
@@ -504,7 +513,7 @@ class Api:
             img = Image.open(i_path)
             img = img.convert('RGB')
 
-            return {"data": f"{i_path}, type{img_type}", "caption": interrogate.interrogate(img)}
+            return {"data": f"{i_path}, type:{img_type}", "caption": interrogate.interrogate(img)}
 
     def upload_clothes_image(self, file: UploadFile = File(...), img_type: Optional[int] = None):
         if not os.path.exists(datadir.clothes_merge_scene_dir):

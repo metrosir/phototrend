@@ -566,6 +566,7 @@
                 xhr.open('POST', '/upload_image?img_type=1', true);
                 xhr.send(formData);
                 xhr.onreadystatechange = function () {
+                    add_coor()
                     if (xhr.readyState == 4) {
                         if (xhr.status == 200) {
                             var response = JSON.parse(xhr.responseText);
@@ -583,6 +584,7 @@
                             var event = new Event('input');
                             textarea.dispatchEvent(event);
                             afterComm()
+                            afterComm(true, 1)
                         } else {
                             alert("请求失败")
                         }
@@ -628,6 +630,7 @@
             }, 'image/png', 1);
             try {
                 afterComm(false)
+                afterComm(false, 1)
             } catch (e) {
                 console.log(e)
             }
@@ -653,13 +656,7 @@
         }
     });
 
-    function afterComm(is_upload = true) {
-        if (pro_mask_img == '') {
-            // todo
-            var mask_image = '/tmp/project_test.webp'
-        } else {
-            var mask_image = pro_mask_img
-        }
+    function afterComm(is_upload = true, layer = 0) {
 
         var link = document.createElement('a');
         var canvasToExport = document.createElement('canvas');
@@ -677,7 +674,7 @@
         if (objects.length <= 1) {
             return false
         }
-        var secondObject = objects[1];
+        var secondObject = objects[layer];
         var adjustedX = secondObject.left * canvas_power
         var adjustedY = secondObject.top * canvas_power
         var adjustedWidth = secondObject.getScaledWidth() * canvas_power;
@@ -696,13 +693,19 @@
         // 绘制第二个图层对象
         ctx.drawImage(secondObject.getElement(), adjustedX, adjustedY, adjustedWidth, adjustedHeight);
         if (is_upload) {
+            // todo
+            var layer_img_type_map = {
+                0: '3',
+                1: '2',
+            }
+
             canvasToExport.toBlob(function (blob) {
                 document.getElementById('loading').style.display = 'block';
                 var formData = new FormData();
                 formData.append('file', blob);
                 formData.append('img_type', 2);
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload_image?img_type=2', true);
+                xhr.open('POST', '/upload_image?img_type='+layer_img_type_map[layer], true);
                 xhr.send(formData);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == 4) {
