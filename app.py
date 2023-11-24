@@ -236,8 +236,8 @@ def save_commdity_tmpe(template_name, template_img, template_size, shape, coordi
     }
 
     data = pd.DataFrame(data=[
-        # name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '推理参数', '评分', '备注', 'date'
-        [template_name, template_img, template_size, shape, coordinate, type, json.dumps(inf_params), '', '', datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")],
+        # name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '评分', '备注', 'date', '推理参数'
+        [template_name, template_img, template_size, shape, coordinate, type, '', '', datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S"), json.dumps(inf_params)],
     ], columns=tm.columns)
     return tm.add(data)
 
@@ -452,7 +452,7 @@ def commodity_tab():
                                         stylesdata = gr.Dataframe(
                                             value=tm.get_styles,
                                             col_count=(len(tm.display_columns), 'fixed'),
-                                            wrap=True, max_rows=1000, show_label=False, interactive=True,
+                                            wrap=False, max_rows=1000, show_label=True, interactive=False, min_width=80,
                                             elem_id="style_editor_grid"
                                         )
                                         stylesdata.input(fn=tm.update_styles, inputs=[stylesdata], outputs=[stylesdata])

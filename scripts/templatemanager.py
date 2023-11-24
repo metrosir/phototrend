@@ -17,9 +17,9 @@ except:
 
 name_column = 'name'
 # 录入
-columns = [name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '推理参数', '评分', '备注', 'date']
-user_columns = [name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '推理参数', '评分', '备注', 'date']
-display_columns = ['sort', name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '推理参数', '评分', '备注', 'date']
+columns = [name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '评分', '备注', 'date', '推理参数']
+user_columns = [name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '评分', '备注', 'date', '推理参数']
+display_columns = ['sort', name_column,'模板图片', '模板尺寸', '模板形状', '模板坐标', '商品分类', '评分', '备注', 'date', '推理参数']
 d_types = {name_column:str,'模板图片':str, '模板尺寸':str, '模板形状':str, '模板坐标':str, '商品分类':str, '推理参数':str, '评分':str, '备注':str, 'date':str}
 
 base_dir = os.path.join(project_dir, "worker_data/template/styles/")
