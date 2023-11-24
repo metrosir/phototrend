@@ -232,8 +232,8 @@ def ipadapter():
 
     ## ip_model = ip_adapter.ip_adapter.IPAdapterPlus(pipe.pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
 
-    # pipe.set_ip_adapter(image_encoder_path, ip_ckpt, device, num_tokens=16)
-    # pipe.input_ip_adapter_condition(pil_image=open_image_to_pil(input_ip_image), prompt=pos_prompt, negative_prompt=neg_prompt, scale=1.0)
+    pipe.set_ip_adapter(image_encoder_path, ip_ckpt, device, num_tokens=16)
+    pipe.input_ip_adapter_condition(pil_image=open_image_to_pil(input_ip_image), prompt=pos_prompt, negative_prompt=neg_prompt, scale=1.0)
 
     pipe.run_inpaint(
         input_image=input_image,

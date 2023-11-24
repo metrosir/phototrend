@@ -254,11 +254,20 @@ class Inpainting:
                 contr_info.pop('scale')
                 contr_info.pop('model_path')
                 controlnet.append(
-                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, **contr_info)
+                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, safety_checker=None, **contr_info)
                 )
             # from diffusers import AutoencoderKL
             # vae_model_path = '/data/aigc/diffusers/scripts/diffusers_model/'
             # vae = AutoencoderKL.from_pretrained(vae_model_path).to(dtype=torch.float16)
+            # noise_scheduler = DDIMScheduler(
+            #     num_train_timesteps=1000,
+            #     beta_start=0.00085,
+            #     beta_end=0.012,
+            #     beta_schedule="scaled_linear",
+            #     clip_sample=False,
+            #     set_alpha_to_one=False,
+            #     steps_offset=1,
+            # )
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
             # self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
                 self.base_model,
@@ -266,6 +275,7 @@ class Inpainting:
                 torch_dtype=self.torch_dtype,
                 local_files_only=self.local_files_only,
                 controlnet=controlnet,
+                # scheduler=noise_scheduler,
                 # subfolder=self.base_model_sub,
             )
         except Exception as e:

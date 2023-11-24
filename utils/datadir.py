@@ -36,6 +36,7 @@ merge_after_mask_image_dir = history + '/{uuid}/merge_after_mask_image'.format(u
 mask_image_dir = history + '/{uuid}/mask_image'.format(uuid=uuid)
 # mask反转
 merge_after_mask_cut_image_dir = history + '/{uuid}/merge_after_mask_cut_image'.format(uuid=uuid)
+controlnet_images = history + '/{uuid}/controlnet_images/{idx}'
 # generate 的图片
 generate_image_dir = history + '/{uuid}/generate_image/{idx}'
 generate_glob_img = history + '/*/generate_image/*/*.png'

@@ -1,6 +1,8 @@
 from controlnet_aux import LineartDetector
 import cv2
 import numpy as np
+from io import BytesIO
+from PIL import Image
 
 def get_lineart_image(image, image_resolution, model_path='lllyasviel/Annotators'):
     lineart = LineartDetector.from_pretrained(model_path, filename='')
@@ -84,8 +86,6 @@ def lineart(img, res=512, **kwargs):
 
 
 def lineart_image(input_image, width):
-    from io import BytesIO
-    from PIL import Image
     if type(input_image) is str:
         input_image = Image.open(BytesIO(open(input_image, 'rb').read())).convert("RGB")
     # width, height = img.size
@@ -94,3 +94,37 @@ def lineart_image(input_image, width):
     input_image = Image.fromarray(input_image)
     # image.save(f'{project_dir}/test/input/inpaint/linearts/2_test1.png')
     return input_image
+
+def scribble_xdog(img, res=512, thr_a=32, **kwargs):
+    if type(img) is str:
+        img = Image.open(BytesIO(open(img, 'rb').read())).convert("RGB")
+    img, remove_pad = resize_image_with_pad(img, res)
+    g1 = cv2.GaussianBlur(img.astype(np.float32), (0, 0), 0.5)
+    g2 = cv2.GaussianBlur(img.astype(np.float32), (0, 0), 5.0)
+    dog = (255 - np.min(g2 - g1, axis=2)).clip(0, 255).astype(np.uint8)
+    result = np.zeros_like(img, dtype=np.uint8)
+    result[2 * (255 - dog) > thr_a] = 255
+    input_image = remove_pad(result)
+    input_image = input_image.astype(np.uint8)
+    input_image = Image.fromarray(input_image)
+    return input_image
+
+
+# def pidinet(img, res=512, **kwargs):
+#     img, remove_pad = resize_image_with_pad(img, res)
+#     global model_pidinet
+#     if model_pidinet is None:
+#         from annotator.pidinet import apply_pidinet
+#         model_pidinet = apply_pidinet
+#     result = model_pidinet(img)
+#     return remove_pad(result), True
+#
+# def scribble_pidinet(img, res=512, **kwargs):
+#     result, _ = pidinet(img, res)
+#     import cv2
+#     from annotator.util import nms
+#     result = nms(result, 127, 3.0)
+#     result = cv2.GaussianBlur(result, (0, 0), 3.0)
+#     result[result > 4] = 255
+#     result[result < 255] = 0
+#     return result, True

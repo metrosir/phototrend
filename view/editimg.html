@@ -1,387 +1,664 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pica/4.1.2/pica.min.js"></script> -->
-  </head>
-  <style>
-        @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+</head>
+<style>
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
         }
-        #loading {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;
+        100% {
+            transform: rotate(360deg);
         }
-        .loader {
-            border: 16px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 16px solid #3498db;
-            width: 60px;
-            height: 60px;
-            animation: spin 2s linear infinite;
-        }
-  </style>
-  <body>
-    <div id="head" style="margin-bottom: 15px;">
-        <input type="file" id="file-input" style="display: none;">
+    }
 
-        <select id="size-select">
-            <option value="1">768x1024</option>
-            <option value="2">800x1424</option>
-            <option value="3">800x800</option>
-            <option value="4">1000x1500</option>
-        </select>
-        <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
-        <input type="button" id="sync_img" value="同步产品图">
-        <button id="export-button">上传资源</button>
-        <button id="download-button">导出到本地查看</button>
-        <!-- <button id="download-top1-button">导出第一个图层到本地</button> -->
+    #loading {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+    }
+
+    .loader {
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+    }
+</style>
+<body>
+<div id="head" style="margin-bottom: 15px;">
+    <input id="file-input" style="display: none;" type="file">
+
+    <select id="size-select">
+        <option value="1">768x1024</option>
+        <option value="2">800x1424</option>
+        <option value="3">800x800</option>
+        <option value="4">1000x1500</option>
+    </select>
+    <button id="upload-button" onclick="document.getElementById('file-input').click()">自定义场景图</button>
+    <input id="sync_img" type="button" value="同步产品图">
+    <button id="export-button">上传资源</button>
+    <button id="download-button">导出到本地查看</button>
+    <!-- <button id="download-top1-button">导出第一个图层到本地</button> -->
+</div>
+<div id="canvas_contain" style="margin-top: 15px;">
+    <canvas id="canvas" height="512" style="border:1px solid #ccc" width="384"></canvas>
+</div>
+<div id="loading">
+    <div id="loader-contain" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div class="loader"></div>
     </div>
-    <div id="canvas_contain" style="margin-top: 15px;">
-        <canvas id="canvas" width="384" height="512" style="border:1px solid #ccc"></canvas>
-    </div>
-    <div id="loading">
-        <div id="loader-contain" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-            <div class="loader" ></div>
-        </div>
-    </div>
+</div>
 
-    <script>
-        function showLoading() {
-            document.getElementById('loading').style.display = 'block';
-        }
-        function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
-        }
-    </script>
+<script>
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block';
+    }
 
-    <script src="https://cdn.jsdelivr.net/npm/fabric"></script>
-    <script src="http://nodeca.github.io/pica/dist/pica.js"></script>
-    <script>
-        var sizes = {
-            1: {
-                'width': 768,
-                'height': 1024,
-                'c_width': 384,
-                'c_height': 512
-            },
-            2: {
-                'width': 800,
-                'height': 1424,
-                'c_width': 400,
-                'c_height': 712
-            },
-            3: {
-                'width': 800,
-                'height': 800,
-                'c_width': 400,
-                'c_height': 400
-            },
-            4: {
-                'width': 1000,
-                'height': 1500,
-                'c_width': 500,
-                'c_height': 750
-            },
-        }
-        var pro_img = ''
-        var pro_mask_img = ''
-        var def_prompt=''
-        var width=768
-        var height=1024
-        var canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
+</script>
 
-        document.getElementById('size-select').addEventListener("change", function () {
-        var size = document.getElementById('size-select').value;
-        // console.info(size)
-            width = sizes[size].width
-            height = sizes[size].height
-            canvas.setWidth(sizes[size].c_width);
-            canvas.setHeight(sizes[size].c_height);
-            sceneImg(size)
-        })
+<script src="https://cdn.jsdelivr.net/npm/fabric"></script>
+<script src="http://nodeca.github.io/pica/dist/pica.js"></script>
+<script>
+    var canvas_power = 2
+    var coor_rates = {
+        'w': 0.57,
+        'h': 0.71,
+        'x': 0.22,
+        'y': 0.17,
+    }
 
-        canvas.on('mouse:over', function(e) {
-        var target = e.target;
-        if (target) {
-          target.set({
-            borderColor: '#ccc',
-            cornerColor: 'black',
-            cornerSize: 6,
-            transparentCorners: true
-          });
-          canvas.renderAll();
-        }
+    var sizes = {
+        1: {
+            'width': 768,
+            'height': 1024,
+            'c_width': 384,
+            'c_height': 512,
+            'coor': {
+                'width': (768*coor_rates.w/canvas_power).toFixed(2),
+                'height': (1024*coor_rates.h/canvas_power).toFixed(2),
+                'left': (768*coor_rates.x/canvas_power).toFixed(2),
+                'top': (1024*coor_rates.y/canvas_power).toFixed(2),
+            }
+        },
+        2: {
+            'width': 800,
+            'height': 1424,
+            'c_width': 400,
+            'c_height': 712,
+            'coor': {
+                'width': (800*coor_rates.w/canvas_power).toFixed(2),
+                'height': (1424*coor_rates.h/canvas_power).toFixed(2),
+                'left': (800*coor_rates.x/canvas_power).toFixed(2),
+                'top': (1424*coor_rates.y/canvas_power).toFixed(2),
+            }
+        },
+        3: {
+            'width': 800,
+            'height': 800,
+            'c_width': 400,
+            'c_height': 400,
+            'coor': {
+                'width': (800*coor_rates.w/canvas_power).toFixed(2),
+                'height': (800*coor_rates.h/canvas_power).toFixed(2),
+                'left': (800*coor_rates.x/canvas_power).toFixed(2),
+                'top': (800*coor_rates.y/canvas_power).toFixed(2),
+            }
+        },
+        4: {
+            'width': 1000,
+            'height': 1500,
+            'c_width': 500,
+            'c_height': 750,
+            'coor': {
+                'width': (1000*coor_rates.w/canvas_power).toFixed(2),
+                'height': (1500*coor_rates.h/canvas_power).toFixed(2),
+                'left': (1000*coor_rates.x/canvas_power).toFixed(2),
+                'top': (1500*coor_rates.y/canvas_power).toFixed(2),
+            }
+        },
+    }
+    var size_select = '1'
+    var pro_img = ''
+    var pro_mask_img = ''
+    var def_prompt = ''
+    var width = 768
+    var height = 1024
+    var canvas = new fabric.Canvas('canvas', {preserveObjectStacking: true});
+    var coor = {
+        id: 'coor',
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'transparent',
+        stroke: '#111827',
+        strokeWidth: 2,
+        // selectable: true,
+        // hasControls: true,
+        // hasBorders: true,
+        strokeDashArray: [5, 5]
+    }
+    var coor_obj = new fabric.Rect(coor);
+    var coor_text = null;
+
+    var verticalLine = new fabric.Line([canvas.width / canvas_power, 0, canvas.width / canvas_power, canvas.height], {
+        id: 'verticalLine',
+        stroke: 'red',
+        strokeWidth: 2,
+        selectable: false,
+        visible: false, // 初始时不可见
+    });
+    var horizontalLine = new fabric.Line([0, canvas.height / canvas_power, canvas.width, canvas.height / canvas_power], {
+        id: 'horizontalLine',
+        stroke: 'red',
+        strokeWidth: 2,
+        selectable: false,
+        visible: false, // 初始时不可见
+    });
+    canvas.add(verticalLine);
+    canvas.add(horizontalLine);
+
+    canvas.on('mouse:up', function (e) {
+        // 鼠标松开后隐藏红色竖线
+        verticalLine.set('visible', false);
+        horizontalLine.set('visible', false);
+        canvas.renderAll();
+    });
+
+    function setCoorSize() {
+
+        coor.width = parseFloat(sizes[size_select].coor.width);
+        coor.height = parseFloat(sizes[size_select].coor.height);
+        coor.left = parseFloat(sizes[size_select].coor.left);
+        coor.top = parseFloat(sizes[size_select].coor.top);
+        coor_obj.set(coor);
+        coor_obj.setCoords();
+
+        // 重置竖红线的长度
+        verticalLine.set('x1', canvas.width / canvas_power)
+        verticalLine.set('y1', 0)
+        verticalLine.set('x2', canvas.width / canvas_power)
+        verticalLine.set('y2', canvas.height)
+        verticalLine.set('visible', false);
+        // 重置横红线的长度
+        horizontalLine.set('x1', 0)
+        horizontalLine.set('y1', canvas.height / canvas_power)
+        horizontalLine.set('x2', canvas.width)
+        horizontalLine.set('y2', canvas.height / canvas_power)
+        horizontalLine.set('visible', false);
+        canvas.renderAll();
+    }
+
+    function add_coor() {
+        remove_coor()
+        coor_obj = new fabric.Rect(coor)
+        canvas.add(coor_obj)
+
+        coor_text = new fabric.Text('X: ' + (sizes[size_select].coor.left * canvas_power).toFixed(2) + ', Y:' + (sizes[size_select].coor.top * canvas_power).toFixed(2) + ',W:' + (sizes[size_select].coor.width * canvas_power).toFixed(2) + ',H:' + (sizes[size_select].coor.height * canvas_power).toFixed(2), {
+            id: 'coor_text',
+            left: Math.abs(sizes[size_select].coor.left),
+            top: Math.abs(sizes[size_select].coor.top - 20),
+            backgroundColor: 'white',
+            fontSize: 12,
+            fill: 'black',
         });
+        canvas.add(coor_text)
+        coor_obj.setCoords();
+        sync_coor()
 
-        canvas.on('mouse:out', function(e) {
-        var target = e.target;
-        if (target) {
-          target.set({
-            borderColor: 'transparent',
-            cornerColor: 'transparent',
-            cornerSize: 0,
-            transparentCorners: true
-          });
-          canvas.renderAll();
-        }
-        });
+        // todo
+        // canvas.moveTo(coor_obj, canvas.getObjects().length - 1);
+        canvas.bringToFront(coor_text);
+        // canvas.requestRenderAll(); // 使用requestRenderAll()方法代替 renderAll()以提高性能?
+        setCoorSize()
+        canvas.renderAll();
 
-        //   自定义场景图
-        document.getElementById('file-input').addEventListener("change", function (e) {
-        var file = e.target.files[0];
-        var reader = new FileReader();
+        var updateTextPosition = function (e) {
+            var activeObject = e.target;
+            var _w = (activeObject.getScaledWidth() * canvas_power).toFixed(2)
+            var _h = (activeObject.getScaledHeight() * canvas_power).toFixed(2)
+            var _x = (activeObject.left * canvas_power).toFixed(2)
+            var _y = (activeObject.top * canvas_power).toFixed(2)
 
-        reader.onload = function (f) {
-          var data = f.target.result;
-          fabric.Image.fromURL(data, function (img) {
-            var oImg = img;
-            var canvasAspectRatio = canvas.width / canvas.height;
-            var imgAspectRatio = img.width / img.height;
-            var scaleFactor, left, top;
-
-            if (canvasAspectRatio > imgAspectRatio) {
-              scaleFactor = canvas.height / img.height;
-              left = (canvas.width - img.width * scaleFactor) / 2;
-              top = 0;
-            } else {
-              scaleFactor = canvas.width / img.width;
-              left = 0;
-              top = (canvas.height - img.height * scaleFactor) / 2;
+            sizes[size_select].coor.width = activeObject.getScaledWidth()
+            sizes[size_select].coor.height = activeObject.getScaledHeight()
+            sizes[size_select].coor.left = activeObject.left
+            sizes[size_select].coor.top = activeObject.top
+            coor.left = activeObject.left;
+            coor.top = activeObject.top;
+            coor.width = activeObject.getScaledWidth();
+            coor.height = activeObject.getScaledHeight();
+            if (activeObject === coor_obj) {
+                coor_text.set({
+                    left: coor_obj.left,
+                    top: coor_obj.top - 20,
+                    backgroundColor: 'white',
+                    text: 'X:' + _x + ',Y: ' + _y + ',W:' + _w + ',H:' + _h
+                });
+                // canvas.requestRenderAll(); // 使用requestRenderAll()方法代替renderAll()以提高性能?
+                // canvas.renderAll();
+                canvas.bringToFront(coor_text);
             }
 
-            oImg.set({
-              left: left,
-              top: top,
-              scaleX: scaleFactor,
-              scaleY: scaleFactor,
-              cornerSize: 0,
-              // perPixelTargetFind:true
+            // 辅助线
+            verticalLine.set('visible', true);
+            canvas.bringToFront(verticalLine);
+            horizontalLine.set('visible', true);
+            canvas.bringToFront(horizontalLine); // 将红色横线置于最上层
+            canvas.renderAll();
+        };
+        // updateTextPosition({target: coor_obj}); // 初始化坐标框的位置
+        canvas.on('object:moving', updateTextPosition);
+        canvas.on('object:scaling', updateTextPosition);
+        canvas.on('object:resizing', updateTextPosition); // 监听大小变化事件
+        canvas.on('mouse:up', function (e){
+            sync_coor()
+        });
+    }
+
+    // 向上置一层函数
+    function moveLayerUp() {
+        canvas.bringForward(coor_obj);
+        canvas.bringForward(coor_text);
+        canvas.renderAll();
+        document.body.removeChild(menu); // 移除自定义下拉列表
+    }
+
+    // 向下置一层函数
+    function moveLayerDown() {
+        canvas.sendBackwards(coor_obj);
+        canvas.sendBackwards(coor_text);
+        canvas.renderAll();
+        document.body.removeChild(menu); // 移除自定义下拉列表
+    }
+
+    function remove_coor() {
+        canvas.forEachObject(function (obj) {
+            if (obj.id === 'coor' || obj.id === 'coor_text' || obj.id === 'verticalLine' || obj.id === 'horizontalLine') {
+                canvas.remove(obj);
+            }
+        });
+    }
+
+    function remove_scene() {
+        canvas.forEachObject(function (obj) {
+            // 模糊匹配 scene_img_前缀的图层
+            if (obj !== undefined && obj.id !== undefined && obj.id.indexOf('scene_img') !== -1) {
+                canvas.remove(obj);
+            }
+        });
+    }
+
+    function remove_pro_img() {
+        canvas.forEachObject(function (obj) {
+            if (obj !== undefined && obj.id !== undefined && obj.id.indexOf('pro_img') !== -1) {
+                canvas.remove(obj);
+            }
+        });
+    }
+
+    function sync_coor() {
+        var coordinate = window.parent.document.querySelector('#coordinate textarea');
+        var coor_val = {
+            'width': (sizes[size_select].coor.width * canvas_power).toFixed(2),
+            'height': (sizes[size_select].coor.height *canvas_power).toFixed(2),
+            'left': (sizes[size_select].coor.left * canvas_power).toFixed(2),
+            'top': (sizes[size_select].coor.top * canvas_power).toFixed(2),
+        }
+        console.info(coor_val)
+        coordinate.value = JSON.stringify(coor_val);
+        var event = new Event('input');
+        coordinate.dispatchEvent(event);
+    }
+
+    document.getElementById('size-select').addEventListener("change", function () {
+        size_select = this.value
+        var size = document.getElementById('size-select').value;
+        // console.info(size)
+        width = sizes[size].width
+        height = sizes[size].height
+        canvas.setWidth(sizes[size].c_width);
+        canvas.setHeight(sizes[size].c_height);
+        remove_coor()
+        setTimeout(function (){
+            sceneImg(size)
+        }, 100)
+    })
+
+    canvas.on('mouse:over', function (e) {
+        var target = e.target;
+        if (target) {
+            target.set({
+                borderColor: '#ccc',
+                cornerColor: 'black',
+                cornerSize: 6,
+                transparentCorners: true
             });
-
-            canvas.add(oImg).renderAll();
-            canvas.setActiveObject(oImg);
-            canvas.moveTo(oImg, canvas.getObjects().length-1);
-            // canvas.on('object:added', function() {
-            //   canvas.moveTo(oImg, canvas.getObjects().length-1);
-            // });
-          });
-        };
-        reader.readAsDataURL(file);
-        });
-
-        //   删除图层
-        document.addEventListener('keydown', function(event) {
-        if (event.key === 'Delete' || event.key == 'Backspace') {
-          var activeObject = canvas.getActiveObject();
-          if (activeObject) {
-            canvas.remove(activeObject);
-          }
+            canvas.renderAll();
         }
-        });
+    });
 
-        document.getElementById('sync_img').addEventListener("click", function () {
-        if (pro_img=='') {
-          alert('请同步产品图！')
-          return false
+    canvas.on('mouse:out', function (e) {
+        var target = e.target;
+        if (target) {
+            target.set({
+                borderColor: 'transparent',
+                cornerColor: 'transparent',
+                cornerSize: 0,
+                transparentCorners: true
+            });
+            canvas.renderAll();
         }
+    });
 
-        fabric.Image.fromURL(pro_img, function (oImg) {
-          var canvasAspectRatio = canvas.width / canvas.height;
-          var imgAspectRatio = oImg.width / oImg.height;
-          var scaleFactor, left, top;
+    //   自定义场景图
+    document.getElementById('file-input').addEventListener("change", function (e) {
+        var file = e.target.files[0];
+        var reader = new FileReader();
+        remove_scene()
+        remove_pro_img()
+        reader.onload = function (f) {
+            var data = f.target.result;
+            fabric.Image.fromURL(data, function (img) {
+                var oImg = img;
+                var canvasAspectRatio = canvas.width / canvas.height;
+                var imgAspectRatio = img.width / img.height;
+                var scaleFactor, left, top;
 
-          if (canvasAspectRatio > imgAspectRatio) {
-            scaleFactor = canvas.height / oImg.height;
-            left = (canvas.width - oImg.width * scaleFactor) / 2;
-            top = 0;
-          } else {
-            scaleFactor = canvas.width / oImg.width;
-            left = 0;
-            top = (canvas.height - oImg.height * scaleFactor) / 2;
-          }
-
-          oImg.set({
-            left: left,
-            top: top,
-            scaleX: scaleFactor,
-            scaleY: scaleFactor,
-            cornerSize: 0,
-          });
-
-          canvas.add(oImg).renderAll();
-          canvas.setActiveObject(oImg);
-          canvas.moveTo(oImg, canvas.getObjects().length-1);
-        });
-
-        });
-
-        //   拉取默认场景图
-        window.onload = function() {
-            sceneImg()
-        };
-
-        function sceneImg(type=1) {
-            var g_width = window.parent.document.querySelector('#g_width textarea');
-            var g_height = window.parent.document.querySelector('#g_height textarea');
-            console.info(g_width, g_height)
-
-
-            g_width.value = sizes[type].width
-            g_height.value = sizes[type].height
-            console.info(g_width, g_height)
-            console.info(g_width.value, g_height.value)
-            var event = new Event('input');
-            g_width.dispatchEvent(event);
-            g_height.dispatchEvent(event);
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/deft_scene?size_type='+type, true);
-            xhr.responseType = 'blob';
-            xhr.onload = function(e) {
-              if (this.status == 200) {
-                var blob = this.response;
-                var img = URL.createObjectURL(blob);
-                fabric.Image.fromURL(img, function (oImg) {
-                  var canvasAspectRatio = canvas.width / canvas.height;
-                  var imgAspectRatio = oImg.width / oImg.height;
-                  var scaleFactor, left, top;
-
-                  if (canvasAspectRatio > imgAspectRatio) {
-                    scaleFactor = canvas.height / oImg.height;
-                    left = (canvas.width - oImg.width * scaleFactor) / 2;
+                if (canvasAspectRatio > imgAspectRatio) {
+                    scaleFactor = canvas.height / img.height;
+                    left = (canvas.width - img.width * scaleFactor) / canvas_power;
                     top = 0;
-                  } else {
-                    scaleFactor = canvas.width / oImg.width;
+                } else {
+                    scaleFactor = canvas.width / img.width;
                     left = 0;
-                    top = (canvas.height - oImg.height * scaleFactor) / 2;
-                  }
+                    top = (canvas.height - img.height * scaleFactor) / canvas_power;
+                }
 
-                  oImg.set({
+                oImg.set({
+                    id: 'scene_img',
                     left: left,
                     top: top,
                     scaleX: scaleFactor,
                     scaleY: scaleFactor,
                     cornerSize: 0,
-                  });
-                  //清空图层1
-                  canvas.remove(canvas.getObjects()[0]);
-                  canvas.add(oImg).renderAll();
-                  canvas.setActiveObject(oImg);
-                  canvas.moveTo(oImg, canvas.getObjects().length-1);
+                    // perPixelTargetFind:true
                 });
-              }
-            };
-            xhr.send();
-        }
 
-        //   场景和商品图合并完成，进行同步
-        document.getElementById('export-button').addEventListener("click", function () {
-        var objects = canvas.getObjects();
-        if (objects.length <= 1) {
-          console.log("没有图层存在");
-          alert('请同步产品图！')
-          return false
-        }
-        var link = document.createElement('a');
-        var canvasToExport = document.createElement('canvas');
-        var scaleFactor = width / height;
-        var exportWidth, exportHeight;
+                canvas.add(oImg).renderAll();
+                canvas.setActiveObject(oImg);
+                canvas.moveTo(oImg, canvas.getObjects().length - 1);
+                add_coor()
+                // canvas.on('object:added', function() {
+                //   canvas.moveTo(oImg, canvas.getObjects().length-1);
+                // });
+            });
+        };
+        reader.readAsDataURL(file);
+    });
 
-        if (scaleFactor > 1) {
-          exportWidth = width;
-          exportHeight = width / scaleFactor;
-        } else {
-          exportWidth = height * scaleFactor;
-          exportHeight = height;
-        }
-
-        canvasToExport.width = exportWidth;
-        canvasToExport.height = exportHeight;
-        var ctx = canvasToExport.getContext('2d');
-        ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
-        canvasToExport.toBlob(function (blob) {
-          document.getElementById('loading').style.display = 'block';
-          var formData = new FormData();
-          formData.append('file', blob);
-          formData.append('img_type', 1);
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', '/upload_image?img_type=1', true);
-          xhr.send(formData);
-          xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4) {
-                if (xhr.status == 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    console.log(response);
-                    // {"data": "/tmp/qilin/4e56448b/commodity_merge_scene_image/0.png",    "caption": "a white vase with a green plant next to it on a white table with a green wall behind it, a 3D render, product photo, plasticien, Enguerrand Quarton"}
-                    var textarea = window.parent.document.querySelector('#comm_prompt textarea');
-                    if (def_prompt === '') {
-                        def_prompt=textarea.value
-                        caption = response.caption.split(',')[0]
-                        textarea.value = caption +','+ def_prompt;
-                    } else {
-                        caption = response.caption.split(',')[0]
-                        textarea.value = caption +','+ def_prompt;
-                    }
-                    var event = new Event('input');
-                    textarea.dispatchEvent(event);
-                    afterComm()
-                } else {
-                    alert("请求失败")
-                }
+    //   删除图层
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Delete' || event.key == 'Backspace') {
+            var activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                canvas.remove(activeObject);
             }
-            document.getElementById('loading').style.display = 'none';
-          };
-        }, 'image/png', 1);
-        });
-
-        document.getElementById('download-button').addEventListener("click", function () {
-        var objects = canvas.getObjects();
-        if (objects.length <= 1) {
-          console.log("没有图层存在");
-          alert('请同步产品图！')
-          return false
         }
-        var link = document.createElement('a');
-        var canvasToExport = document.createElement('canvas');
-        var scaleFactor = width / height;
-        var exportWidth, exportHeight;
+    });
 
-        if (scaleFactor > 1) {
-          exportWidth = width;
-          exportHeight = width / scaleFactor;
-        } else {
-          exportWidth = height * scaleFactor;
-          exportHeight = height;
+    document.getElementById('sync_img').addEventListener("click", function () {
+        if (pro_img == '') {
+            alert('请先上传产品图！')
+            return false
         }
 
-        canvasToExport.width = exportWidth;
-        canvasToExport.height = exportHeight;
-        var ctx = canvasToExport.getContext('2d');
-        ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
-        canvasToExport.toBlob(function (blob) {
-          link.href = URL.createObjectURL(blob);
-          link.download = 'canvas.png';
-          link.click();
-        }, 'image/png', 1);
-        afterComm(false)
+        fabric.Image.fromURL(pro_img, function (oImg) {
+            var canvasAspectRatio = canvas.width / canvas.height;
+            var imgAspectRatio = oImg.width / oImg.height;
+            var scaleFactor, left, top;
+
+            if (imgAspectRatio > 1) {
+                scaleFactor = coor.width / oImg.width;
+            } else {
+                scaleFactor = coor.height / oImg.height;
+            }
+            // if (canvasAspectRatio > imgAspectRatio) {
+            //     scaleFactor = canvas.height / oImg.height;
+            //     left = (canvas.width - oImg.width * scaleFactor) / canvas_power;
+            //     top = 0;
+            // } else {
+            //     scaleFactor = canvas.width / oImg.width;
+            //     left = 0;
+            //     top = (canvas.height - oImg.height * scaleFactor) / canvas_power;
+            // }
+            // console.info("scaleFactor:", scaleFactor)
+            remove_pro_img()
+            info = {
+                id: 'pro_img',
+                left: coor.left + coor.width / 2 - oImg.width * scaleFactor / 2,
+                top: coor.top,
+                scaleX: scaleFactor,
+                scaleY: scaleFactor,
+                cornerSize: 0,
+            }
+            oImg.set(
+                info
+            );
+
+            canvas.add(oImg).renderAll();
+            canvas.setActiveObject(oImg);
+            canvas.moveTo(oImg, canvas.getObjects().length - 1);
         });
 
-        canvas.on('object:modified', function (e) {
+    });
+
+    //   拉取默认场景图
+    window.onload = function () {
+        sceneImg()
+        add_coor()
+    };
+
+    // 拉取场景图
+    function sceneImg(type = 1) {
+        // return false
+        var g_width = window.parent.document.querySelector('#g_width textarea');
+        var g_height = window.parent.document.querySelector('#g_height textarea');
+        var template_size = window.parent.document.querySelector('#template_size textarea');
+
+        g_width.value = sizes[type].width
+        g_height.value = sizes[type].height
+        template_size.value = g_width.value + 'x' + g_height.value
+        var event = new Event('input');
+        g_width.dispatchEvent(event);
+        g_height.dispatchEvent(event);
+        template_size.dispatchEvent(event);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/deft_scene?size_type=' + type, true);
+        xhr.responseType = 'blob';
+        xhr.onload = function (e) {
+            if (this.status == 200) {
+                var blob = this.response;
+                var img = URL.createObjectURL(blob);
+                fabric.Image.fromURL(img, function (oImg) {
+                    var canvasAspectRatio = canvas.width / canvas.height;
+                    var imgAspectRatio = oImg.width / oImg.height;
+                    var scaleFactor, left, top;
+
+                    if (canvasAspectRatio > imgAspectRatio) {
+                        scaleFactor = canvas.height / oImg.height;
+                        left = (canvas.width - oImg.width * scaleFactor) / canvas_power;
+                        top = 0;
+                    } else {
+                        scaleFactor = canvas.width / oImg.width;
+                        left = 0;
+                        top = (canvas.height - oImg.height * scaleFactor) / canvas_power;
+                    }
+                    remove_scene()
+                    remove_pro_img()
+                    oImg.set({
+                        id: 'scene_img_' + type,
+                        left: left,
+                        top: top,
+                        scaleX: scaleFactor,
+                        scaleY: scaleFactor,
+                        cornerSize: 0,
+                    });
+                    //清空图层1
+                    // canvas.remove(canvas.getObjects()[0]);
+                    canvas.add(oImg).renderAll();
+                    canvas.setActiveObject(oImg);
+                    canvas.moveTo(oImg, canvas.getObjects().length - 1);
+                    canvas.bringToFront(coor_obj);
+                    add_coor()
+                });
+            }
+        };
+        xhr.send();
+    }
+
+    //   场景和商品图合并完成，进行同步服务器
+    document.getElementById('export-button').addEventListener("click", function () {
+        remove_coor()
+        setTimeout(function () {
+            var objects = canvas.getObjects();
+            if (objects.length <= 1) {
+                console.log("没有图层存在");
+                alert('请同步产品图！')
+                return false
+            }
+            var link = document.createElement('a');
+            var canvasToExport = document.createElement('canvas');
+            var scaleFactor = width / height;
+            var exportWidth, exportHeight;
+
+            if (scaleFactor > 1) {
+                exportWidth = width;
+                exportHeight = width / scaleFactor;
+            } else {
+                exportWidth = height * scaleFactor;
+                exportHeight = height;
+            }
+
+            canvasToExport.width = exportWidth;
+            canvasToExport.height = exportHeight;
+            var ctx = canvasToExport.getContext('2d');
+            ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
+            canvasToExport.toBlob(function (blob) {
+                document.getElementById('loading').style.display = 'block';
+                var formData = new FormData();
+                formData.append('file', blob);
+                formData.append('img_type', 1);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload_image?img_type=1', true);
+                xhr.send(formData);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4) {
+                        if (xhr.status == 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            console.log(response);
+                            // {"data": "/tmp/qilin/4e56448b/commodity_merge_scene_image/0.png",    "caption": "a white vase with a green plant next to it on a white table with a green wall behind it, a 3D render, product photo, plasticien, Enguerrand Quarton"}
+                            var textarea = window.parent.document.querySelector('#comm_prompt textarea');
+                            if (def_prompt === '') {
+                                def_prompt = textarea.value
+                                caption = response.caption.split(',')[0]
+                                textarea.value = caption + ',' + def_prompt;
+                            } else {
+                                caption = response.caption.split(',')[0]
+                                textarea.value = caption + ',' + def_prompt;
+                            }
+                            var event = new Event('input');
+                            textarea.dispatchEvent(event);
+                            afterComm()
+                        } else {
+                            alert("请求失败")
+                        }
+                    }
+                    document.getElementById('loading').style.display = 'none';
+                };
+            }, 'image/png', 1);
+        }, 100)
+
+    });
+
+    // 将各个图层下载到本地
+    document.getElementById('download-button').addEventListener("click", function () {
+        remove_coor()
+        setTimeout(function () {
+            var objects = canvas.getObjects();
+            if (objects.length <= 1) {
+                console.log("没有图层存在");
+                alert('请同步产品图！')
+                return false
+            }
+            var link = document.createElement('a');
+            var canvasToExport = document.createElement('canvas');
+            var scaleFactor = width / height;
+            var exportWidth, exportHeight;
+
+            if (scaleFactor > 1) {
+                exportWidth = width;
+                exportHeight = width / scaleFactor;
+            } else {
+                exportWidth = height * scaleFactor;
+                exportHeight = height;
+            }
+
+            canvasToExport.width = exportWidth;
+            canvasToExport.height = exportHeight;
+            var ctx = canvasToExport.getContext('2d');
+            ctx.drawImage(canvas.getElement(), 0, 0, exportWidth, exportHeight);
+            canvasToExport.toBlob(function (blob) {
+                link.href = URL.createObjectURL(blob);
+                link.download = 'canvas.png';
+                link.click();
+            }, 'image/png', 1);
+            try {
+                afterComm(false)
+            } catch (e) {
+                console.log(e)
+            }
+            add_coor()
+        }, 100);
+    });
+
+    canvas.on('object:modified', function (e) {
         var modifiedObject = e.target;
-        if (modifiedObject === canvas.getObjects()[1]) {
-          var adjustedX = modifiedObject.left * 2;
-          var adjustedY = modifiedObject.top * 2;
-          var adjustedWidth = modifiedObject.getScaledWidth();
-          var adjustedHeight = modifiedObject.getScaledHeight();
-          console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
+        // if (modifiedObject === canvas.getObjects()[1]) {
+        //     var adjustedX = modifiedObject.left * 2;
+        //     var adjustedY = modifiedObject.top * 2;
+        //     var adjustedWidth = modifiedObject.getScaledWidth();
+        //     var adjustedHeight = modifiedObject.getScaledHeight();
+        //     console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
+        // }
+        if (modifiedObject === canvas.getObjects()[-1]) {
+            var adjustedX = modifiedObject.left * 2;
+            var adjustedY = modifiedObject.top * 2;
+            var adjustedWidth = modifiedObject.getScaledWidth();
+            var adjustedHeight = modifiedObject.getScaledHeight();
+            console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
         }
-        });
-        function afterComm(is_upload=true) {
-        if (pro_mask_img=='') {
-          // todo
-          var mask_image='/tmp/project_test.webp'
+    });
+
+    function afterComm(is_upload = true) {
+        if (pro_mask_img == '') {
+            // todo
+            var mask_image = '/tmp/project_test.webp'
         } else {
-          var mask_image=pro_mask_img
+            var mask_image = pro_mask_img
         }
 
         var link = document.createElement('a');
@@ -390,21 +667,21 @@
         var exportWidth, exportHeight;
 
         if (scaleFactor > 1) {
-          exportWidth = width;
-          exportHeight = width / scaleFactor;
+            exportWidth = width;
+            exportHeight = width / scaleFactor;
         } else {
-          exportWidth = height * scaleFactor;
-          exportHeight = height;
+            exportWidth = height * scaleFactor;
+            exportHeight = height;
         }
         var objects = canvas.getObjects();
         if (objects.length <= 1) {
-          return false
+            return false
         }
         var secondObject = objects[1];
-        var adjustedX = secondObject.left*2
-        var adjustedY = secondObject.top*2
-        var adjustedWidth = secondObject.getScaledWidth() * 2;
-        var adjustedHeight = secondObject.getScaledHeight() * 2;
+        var adjustedX = secondObject.left * canvas_power
+        var adjustedY = secondObject.top * canvas_power
+        var adjustedWidth = secondObject.getScaledWidth() * canvas_power;
+        var adjustedHeight = secondObject.getScaledHeight() * canvas_power;
         console.info(adjustedX, adjustedY, adjustedWidth, adjustedHeight)
 
 
@@ -419,71 +696,71 @@
         // 绘制第二个图层对象
         ctx.drawImage(secondObject.getElement(), adjustedX, adjustedY, adjustedWidth, adjustedHeight);
         if (is_upload) {
-          canvasToExport.toBlob(function (blob) {
-            document.getElementById('loading').style.display = 'block';
-            var formData = new FormData();
-            formData.append('file', blob);
-            formData.append('img_type', 2);
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload_image?img_type=2', true);
-            xhr.send(formData);
-            xhr.onreadystatechange = function() {
-              if (xhr.readyState == 4) {
-                  if (xhr.status == 200) {
-                      var response = JSON.parse(xhr.responseText);
-                      console.log(response);
-                  } else {
-                      alert("请求失败")
-                  }
-              }
-              document.getElementById('loading').style.display = 'none';
-            };
-          }, 'image/png', 1);
-          return null
+            canvasToExport.toBlob(function (blob) {
+                document.getElementById('loading').style.display = 'block';
+                var formData = new FormData();
+                formData.append('file', blob);
+                formData.append('img_type', 2);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload_image?img_type=2', true);
+                xhr.send(formData);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4) {
+                        if (xhr.status == 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            console.log(response);
+                        } else {
+                            alert("请求失败")
+                        }
+                    }
+                    document.getElementById('loading').style.display = 'none';
+                };
+            }, 'image/png', 1);
+            return null
         }
         canvasToExport.toBlob(function (blob) {
-          link.href = URL.createObjectURL(blob);
-          link.download = 'second_layer.png';
-          link.click();
+            link.href = URL.createObjectURL(blob);
+            link.download = 'second_layer.png';
+            link.click();
         }, 'image/png', 1);
-        }
+    }
 
 
-        function exportSecondLayerWithMask() {}
+    function exportSecondLayerWithMask() {
+    }
 
-        var observeDOM = (function(){
+    var observeDOM = (function () {
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver,
-        eventListenerSupported = window.addEventListener;
+            eventListenerSupported = window.addEventListener;
 
-        return function(obj, callback){
-          if( MutationObserver ){
-            var obs = new MutationObserver(function(mutations, observer){
-              if( mutations[0].addedNodes.length || mutations[0].removedNodes.length )
-                callback();
-            });
-            obs.observe( obj, { childList:true, subtree:true });
-          }
-          else if( eventListenerSupported ){
-            obj.addEventListener('DOMNodeInserted', callback, false);
-            obj.addEventListener('DOMNodeRemoved', callback, false);
-          }
-        };
-        })();
-
-        observeDOM( window.parent.document.getElementById('rmbg_box') ,function(){
-            var imgElements = window.parent.document.querySelectorAll('#rmbg_box img');
-            var imgElement1 = imgElements[0];
-            // var imgElement2 = imgElements[1];
-            console.info(imgElement1)
-            // console.info(imgElement2)
-            if(imgElement1 !== undefined) {
-                console.info(imgElement1.src)
-                // console.info(imgElement2.src)
-                pro_img = imgElement1.src
-                // pro_mask_img = imgElement2.src
-                console.log('An img element has been added under #rmbg_box');
+        return function (obj, callback) {
+            if (MutationObserver) {
+                var obs = new MutationObserver(function (mutations, observer) {
+                    if (mutations[0].addedNodes.length || mutations[0].removedNodes.length)
+                        callback();
+                });
+                obs.observe(obj, {childList: true, subtree: true});
+            } else if (eventListenerSupported) {
+                obj.addEventListener('DOMNodeInserted', callback, false);
+                obj.addEventListener('DOMNodeRemoved', callback, false);
             }
-        });
-    </script>
-  </body>
+        };
+    })();
+
+    observeDOM(window.parent.document.getElementById('rmbg_box'), function () {
+        var imgElements = window.parent.document.querySelectorAll('#rmbg_box img');
+        var imgElement1 = imgElements[0];
+        // var imgElement2 = imgElements[1];
+        console.info(imgElement1)
+        // console.info(imgElement2)
+        if (imgElement1 !== undefined) {
+            console.info(imgElement1.src)
+            // console.info(imgElement2.src)
+            pro_img = imgElement1.src
+            // pro_mask_img = imgElement2.src
+            console.log('An img element has been added under #rmbg_box');
+        }
+    });
+</script>
+</body>
 </html>

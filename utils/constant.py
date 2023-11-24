@@ -27,16 +27,23 @@ mode_params = {
         'inpaint_weight': 0.5,
         'ip-adapter_weight': 0.55,
         'lineart_weight': 0.7,
+        'scribble_weight': 0.7,
+        'sampler_step':30,
+        'sampler_name': 'UniPC',
         'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,<lora:add_detail:1>',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     },
     self_innovate_mode: {
         # 'inpaint_weight': 0.95,
-        'inpaint_weight': 1,
+        'inpaint_weight': 0.95,
         'ip-adapter_weight': 0.75,
         # 'lineart_weight': 0.7,
-        'lineart_weight': 0.5,
-        'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
+        'lineart_weight': 0.2,
+        'scribble_weight': 2,
+        'sampler_step':10,
+        'sampler_name': 'UniPC',
+        # 'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
+        'prompt': '\n marble table top,(the enhanced ones have higher saturation of colour), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     }
 }
@@ -61,10 +68,18 @@ init_model = {
             'device_map': None,
             'image': None,
         },
+        # {
+        #     'low_cpu_mem_usage': False,
+        #     'model_path': 'metrosir/phototrend',
+        #     'subfolder': 'controlnets/lineart',
+        #     'scale': [],
+        #     'device_map': None,
+        #     'image': None,
+        # },
         {
             'low_cpu_mem_usage': False,
-            'model_path': 'metrosir/phototrend',
-            'subfolder': 'controlnets/lineart',
+            'model_path': 'lllyasviel/control_v11p_sd15_scribble',
+            'subfolder': '',
             'scale': [],
             'device_map': None,
             'image': None,
@@ -76,6 +91,16 @@ init_model = {
         'weight_name': 'string_to_param',
     }
 }
+
+commodity_type = [
+    '化妆品',
+    '服装',
+]
+
+commodity_shape = [
+    '横图',
+    '竖图',
+]
 
 api_queue_dir = f"{project_dir}/worker_data/api_queue"
 
