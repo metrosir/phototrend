@@ -357,7 +357,8 @@ class Inpainting:
     def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
-                    ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False):
+                    ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
+                    open_after=None, after_params=None):
 
         if not type(input_image) is np.ndarray:
             if type(input_image) is str:
@@ -435,6 +436,12 @@ class Inpainting:
             if composite_chk:
                 dilate_mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4))
                 output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
+            if open_after is not None and open_after:
+                if after_params is not None and after_params['base'] is not None:
+                    from .after.final import FinalProcessorBasic
+                    final = FinalProcessorBasic(after_params['base'])
+                    output_image=final.process(seed, output_image)
+
 
             generation_params = {
                 "Steps": ddim_steps,
@@ -449,6 +456,7 @@ class Inpainting:
             prompt_text = prompt if prompt else ""
             negative_prompt_text = "\nNegative prompt: " + n_prompt if n_prompt else ""
             infotext = f"{prompt_text}{negative_prompt_text}\n{generation_params_text}".strip()
+            print("infotext:", infotext)
 
             metadata = PngInfo()
             metadata.add_text("parameters", infotext)

@@ -49,8 +49,8 @@ mode_params = {
 }
 
 init_model = {
-    # 'base_mode':'metrosir/realistic',
-    'base_mode':'danbrown/RevAnimated-v1-2-2',
+    'base_mode':'metrosir/realistic',
+    # 'base_mode':'danbrown/RevAnimated-v1-2-2',
     # 'base_mode':'twn39/RealisticVisionV51',
     # 'base_mode':'twn39/majicmixRealisticV7',
     'controlnets': [

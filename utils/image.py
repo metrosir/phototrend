@@ -1,5 +1,5 @@
-
 import pathlib
+import cv2
 import os
 from PIL import Image, PngImagePlugin
 import base64
@@ -48,8 +48,8 @@ def image_to_base64(img_path):
 def remove_bg(inputim, outputim, mask=False, alpha_matting=True):
     with open(inputim, 'rb') as f:
         with open(outputim, 'wb') as ff:
-            input=f.read()
-            output=remove(input, only_mask=mask, alpha_matting=alpha_matting)
+            input = f.read()
+            output = remove(input, only_mask=mask, alpha_matting=alpha_matting)
             ff.write(output)
 
 
@@ -75,6 +75,7 @@ def save_webp_image_with_transparency(image_path, save_path):
         return True
     return False
 
+
 def read_image_to_np(image_path):
     image = Image.open(image_path)
     image = np.array(image)
@@ -95,12 +96,14 @@ def auto_resize_to_pil(input_image, mask_image):
             scale = new_height / height
         else:
             scale = new_width / width
-        resize_height = int(height*scale+0.5)
-        resize_width = int(width*scale+0.5)
+        resize_height = int(height * scale + 0.5)
+        resize_width = int(width * scale + 0.5)
         if height != resize_height or width != resize_width:
             ia_logging.info(f"resize: ({height}, {width}) -> ({resize_height}, {resize_width})")
-            init_image = transforms.functional.resize(init_image, (resize_height, resize_width), transforms.InterpolationMode.LANCZOS)
-            mask_image = transforms.functional.resize(mask_image, (resize_height, resize_width), transforms.InterpolationMode.LANCZOS)
+            init_image = transforms.functional.resize(init_image, (resize_height, resize_width),
+                                                      transforms.InterpolationMode.LANCZOS)
+            mask_image = transforms.functional.resize(mask_image, (resize_height, resize_width),
+                                                      transforms.InterpolationMode.LANCZOS)
         if resize_height != new_height or resize_width != new_width:
             ia_logging.info(f"center_crop: ({resize_height}, {resize_width}) -> ({new_height}, {new_width})")
             init_image = transforms.functional.center_crop(init_image, (new_height, new_width))
@@ -182,3 +185,18 @@ def save_output_image_to_pil(img, output_dir):
     img_idx = len(os.listdir(output_dir))
     lock.release()
     img.save(os.path.join(output_dir, f'{img_idx}.png'), format="PNG", quality=100)
+
+
+def generate_noise(seed, width, height):
+    img_1 = np.zeros([height, width, 3], dtype=np.uint8)
+    # Generate random Gaussian noise
+    mean = 0
+    stddev = 180
+    r, g, b = cv2.split(img_1)
+    # cv2.setRNGSeed(seed)
+    cv2.randn(r, mean, stddev)
+    cv2.randn(g, mean, stddev)
+    cv2.randn(b, mean, stddev)
+    img = cv2.merge([r, g, b])
+    pil_image = Image.fromarray(img, mode='RGB')
+    return pil_image

@@ -78,10 +78,23 @@ def upload_rem_img_result(img):
 
 
 def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height, contr_scribble_weight, ddim_steps, sampler_name, template_name):
+             contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, width, height, contr_scribble_weight, ddim_steps, sampler_name, template_name,
+             open_after, after_contrast, after_brightness, after_sharpeness, after_color_saturation, after_color_temperature, after_noise_alpha_final,
+             seed,):
 
     if template_name is None or template_name == '':
         raise Exception("模板名称不能为空")
+    after_params = {
+        'open_after': open_after,
+        'base': {
+            'contrast': after_contrast,
+            'brightness': after_brightness,
+            'sharpeness': after_sharpeness,
+            'color_saturation': after_color_saturation,
+            'color_temperature': after_color_temperature,
+            'noise_alpha_final': after_noise_alpha_final,
+        }
+    }
 
     if mode not in constant.generate_mode:
         raise Exception("mode not in constant.generate_mode")
@@ -144,6 +157,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         # Api.gpipe.input_ip_adapter_condition(pil_image=image_utils.open_image_to_pil(comm_merge_scene_im), prompt=pos_prompt,
         #                                 negative_prompt=neg_prompt, scale=contr_ipa_weight)
 
+        print("int(seed):", int(seed))
         res = Api.gpipe.run_inpaint(
             input_image=comm_merge_scene_im,
             mask_image=mask_im,
@@ -151,7 +165,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             n_prompt=neg_prompt,
             ddim_steps=ddim_steps,
             cfg_scale=8.5,
-            seed=-1,
+            seed=int(seed),
             composite_chk=True,
             # sampler_name="Euler a",
             sampler_name=sampler_name,
@@ -160,7 +174,9 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             height=(int(height)//8)*8,
             strength=contr_inp_weight,
             eta=31337,
-            output=generate_image_sub_dir
+            output=generate_image_sub_dir,
+            open_after=open_after,
+            after_params=after_params
         )
         if template_name is not None and template_name != '':
             import shutil
@@ -344,9 +360,12 @@ def commodity_tab():
                             g_height = gr.Text(elem_id="g_height",
                                                value=1024, visible=False, interactive=True)
                             g_height.change(g_wh_change, [g_height])
-                            with gr.Box():
-                                batch_count = gr.Slider(minimum=1, step=1, label='生成数量(Batch count)', value=1,
-                                                        elem_id="txt2img_batch_count")
+                            with gr.Row():
+                                with gr.Column():
+                                    seed = gr.Text(label="种子(Seed)", lines=1, elem_id="seed", value=-1)
+                                with gr.Column():
+                                    batch_count = gr.Slider(minimum=1, step=1, label='生成数量(Batch count)', value=1, lines=1,
+                                                            elem_id="txt2img_batch_count")
                         with gr.TabItem("高级参数(Advanced Params)"):
                             with gr.Row():
                                 select_vae = gr.Dropdown(label='Vae', choices=vae_models_title,
@@ -394,6 +413,31 @@ def commodity_tab():
                                                                                 contr_scribble_weight,
                                                                                 ddim_steps, sampler_name], queue=False)
                             generate_type = gr.Text(value=1, visible=False, elem_id="generate_type")
+                        with gr.TabItem("After..."):
+                            open_after = gr.Checkbox(label=f'开启后处理', value=False)
+                            with gr.Row():
+                                with gr.Column():
+                                    after_contrast = gr.Slider(minimum=0, maximum=2, step=0.01,
+                                                                 label='对比度',
+                                                                 value=1, elem_id="contrast")
+                                    after_brightness = gr.Slider(minimum=0, maximum=2, step=0.01,
+                                                         label='亮度',
+                                                         value=1, elem_id="brightness")
+                                    after_sharpeness = gr.Slider(minimum=0, maximum=5, step=1,
+                                                         label='锐度',
+                                                         value=1, elem_id="sharpeness")
+                                with gr.Column():
+                                    after_color_saturation = gr.Slider(minimum=0, maximum=2, step=0.01,
+                                                                 label='颜色饱和度',
+                                                                 value=1, elem_id="color_saturation")
+                                    after_color_temperature = gr.Slider(minimum=-2000, maximum=2000, step=1,
+                                                         label='色温',
+                                                         value=0, elem_id="color_temperature")
+                                    after_noise_alpha_final = gr.Slider(minimum=0, maximum=2, step=0.01,
+                                                         label='Noise alpha final',
+                                                         value=0, elem_id="noise_alpha_final")
+
+
                     with gr.Box():
                         with gr.Row():
                             with gr.Column():
@@ -516,7 +560,11 @@ def commodity_tab():
 
             run_generate.click(fn=generate,
                                inputs=[mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
-                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight, generate_type, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name, template_name],
+                                       contr_inp_weight, contr_ipa_weight, contr_lin_weight,
+                                       generate_type, g_width, g_height, contr_scribble_weight,
+                                       ddim_steps, sampler_name, template_name,
+                                       open_after, after_contrast, after_brightness, after_sharpeness, after_color_saturation, after_color_temperature, after_noise_alpha_final,
+                                       seed,],
                                outputs=[output_generate_images])
             # template_name, template_img, coordinate, type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, width, height, contr_scribble_weight, ddim_steps, sampler_name
             run_save_temp.click(fn=save_commdity_tmpe, inputs=[template_name, template_img, template_size, shape, coordinate, template_type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name], outputs=[stylesdata])
