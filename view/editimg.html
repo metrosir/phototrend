@@ -322,9 +322,31 @@
         coordinate.value = JSON.stringify(coor_val);
         var event = new Event('input');
         coordinate.dispatchEvent(event);
+        canvas.forEachObject(function (obj) {
+            if (obj !== undefined && obj.id !== undefined && obj.id.indexOf('pro_img') !== -1) {
+                var scale = 0
+                if (obj._data.height > obj._data.width) {
+                    scale = sizes[size_select].coor.height / obj._data.height
+                } else {
+                    scale = sizes[size_select].coor.width / obj._data.width
+                }
+                var set_data = {
+                    left: coor.left + coor.width / 2 - obj._data.width * scale / 2,
+                    top: coor.top,
+                    scaleX: scale,
+                    scaleY: scale,
+                }
+                console.info("img_obj:", set_data)
+                console.info("coor_H_W:", coor.height, coor.width)
+                obj.set(set_data);
+                canvas.renderAll();
+            }
+        });
     }
 
     document.getElementById('size-select').addEventListener("change", function () {
+        // 清空file-input
+        document.getElementById('file-input').value = ''
         size_select = this.value
         var size = document.getElementById('size-select').value;
         // console.info(size)
@@ -351,8 +373,7 @@
         }
     });
 
-    canvas.on('mouse:out', function (e) {
-        var target = e.target;
+    function clearborder(target) {
         if (target) {
             target.set({
                 borderColor: 'transparent',
@@ -362,6 +383,11 @@
             });
             canvas.renderAll();
         }
+    }
+
+    canvas.on('mouse:out', function (e) {
+        var target = e.target;
+        clearborder(target)
     });
 
     //   自定义场景图
@@ -436,16 +462,7 @@
             } else {
                 scaleFactor = coor.height / oImg.height;
             }
-            // if (canvasAspectRatio > imgAspectRatio) {
-            //     scaleFactor = canvas.height / oImg.height;
-            //     left = (canvas.width - oImg.width * scaleFactor) / canvas_power;
-            //     top = 0;
-            // } else {
-            //     scaleFactor = canvas.width / oImg.width;
-            //     left = 0;
-            //     top = (canvas.height - oImg.height * scaleFactor) / canvas_power;
-            // }
-            // console.info("scaleFactor:", scaleFactor)
+            console.info("coor_H_W:", coor.height, coor.width)
             remove_pro_img()
             info = {
                 id: 'pro_img',
@@ -454,10 +471,16 @@
                 scaleX: scaleFactor,
                 scaleY: scaleFactor,
                 cornerSize: 0,
+                _data: {
+                    width: oImg.width,
+                    height: oImg.height
+                }
             }
+            console.info("info:", info)
             oImg.set(
                 info
-            );
+            )
+            clearborder(oImg);
 
             canvas.add(oImg).renderAll();
             canvas.setActiveObject(oImg);
@@ -537,6 +560,7 @@
             var objects = canvas.getObjects();
             if (objects.length <= 1) {
                 console.log("没有图层存在");
+                add_coor()
                 alert('请同步产品图！')
                 return false
             }

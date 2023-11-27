@@ -50,6 +50,7 @@ mode_params = {
 
 init_model = {
     'base_mode':'metrosir/realistic',
+    # 'base_mode':'twn39/majicmixRealisticV7',
     'controlnets': [
         # {
         #     'low_cpu_mem_usage': False,
