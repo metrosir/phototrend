@@ -35,7 +35,7 @@ mode_params = {
     },
     self_innovate_mode: {
         # 'inpaint_weight': 0.95,
-        'inpaint_weight': 0.95,
+        'inpaint_weight': 0.75,
         'ip-adapter_weight': 0.75,
         # 'lineart_weight': 0.7,
         'lineart_weight': 0.2,
@@ -43,13 +43,15 @@ mode_params = {
         'sampler_step':10,
         'sampler_name': 'UniPC',
         # 'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
-        'prompt': '\n marble table top,(the enhanced ones have higher saturation of colour), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
+        'prompt': '\n (the enhanced ones have higher saturation of colour), RAW photo,dramatic lighting,ultra high res, a detailed matte painting, 8k, masterpiece, best quality,high quality',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
     }
 }
 
 init_model = {
-    'base_mode':'metrosir/realistic',
+    # 'base_mode':'metrosir/realistic',
+    'base_mode':'danbrown/RevAnimated-v1-2-2',
+    # 'base_mode':'twn39/RealisticVisionV51',
     # 'base_mode':'twn39/majicmixRealisticV7',
     'controlnets': [
         # {

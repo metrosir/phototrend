@@ -390,6 +390,8 @@ class Inpainting:
             torch_generator = torch.Generator("cuda")
 
         init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
+        # mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4)).convert("L").filter(ImageFilter.GaussianBlur(3))
+        # save_output_image_to_pil(mask_image, '/data1/aigc/phototrend/worker_data/inpaint_output')
         if width is None or height is None:
             width, height = init_image.size
 
