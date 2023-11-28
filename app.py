@@ -465,30 +465,30 @@ def commodity_tab():
                                         self_innovate_history = gr.Button('刷新(Refresh)')
                                         self_innovate_history_imgs = gr.Gallery(show_label=True, columns=4, rows=4, height=500)
                                         g_type = gr.Textbox(value=3, visible=False)
-                        if constant.PT_ENV is not None and constant.PT_ENV != '':
-                            with gr.TabItem("api generate result"):
-                                    with gr.Box():
-                                        def disp_apihistory(id_task):
-                                            input = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                              type='input') + '/*.png'
-                                            output = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                               type='output') + '/*.png'
-                                            return glob.glob(input), glob.glob(output)
+                            if constant.PT_ENV is not None and constant.PT_ENV != '':
+                                with gr.TabItem("api generate result"):
+                                        with gr.Box():
+                                            def disp_apihistory(id_task):
+                                                input = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                                  type='input') + '/*.png'
+                                                output = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                                   type='output') + '/*.png'
+                                                return glob.glob(input), glob.glob(output)
 
-                                        with gr.Row():
-                                            with gr.Box():
+                                            with gr.Row():
+                                                with gr.Box():
+                                                    with gr.Column():
+                                                        task_id = gr.Text(visible=True, label='Task Id')
+                                                    with gr.Column():
+                                                        api_hist_butt = gr.Button('查看(check)')
+                                            with gr.Row():
                                                 with gr.Column():
-                                                    task_id = gr.Text(visible=True, label='Task Id')
+                                                    input = gr.Gallery()
+                                                    pass
                                                 with gr.Column():
-                                                    api_hist_butt = gr.Button('查看(check)')
-                                        with gr.Row():
-                                            with gr.Column():
-                                                input = gr.Gallery()
-                                                pass
-                                            with gr.Column():
-                                                output = gr.Gallery()
-                                                pass
-                                        api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
+                                                    output = gr.Gallery()
+                                                    pass
+                                            api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
                             with gr.TabItem("模板实验"):
                                 with gr.Tabs():
                                     with gr.TabItem("模板"):
