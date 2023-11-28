@@ -465,95 +465,95 @@ def commodity_tab():
                                         self_innovate_history = gr.Button('刷新(Refresh)')
                                         self_innovate_history_imgs = gr.Gallery(show_label=True, columns=4, rows=4, height=500)
                                         g_type = gr.Textbox(value=3, visible=False)
-                            if constant.PT_ENV is not None and constant.PT_ENV != '':
-                                with gr.TabItem("api generate result"):
+                        # if constant.PT_ENV is not None and constant.PT_ENV != '':
+                        with gr.TabItem("api generate result"):
+                                with gr.Box():
+                                    def disp_apihistory(id_task):
+                                        input = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                          type='input') + '/*.png'
+                                        output = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                                                                           type='output') + '/*.png'
+                                        return glob.glob(input), glob.glob(output)
+
+                                    with gr.Row():
                                         with gr.Box():
-                                            def disp_apihistory(id_task):
-                                                input = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                                  type='input') + '/*.png'
-                                                output = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                                   type='output') + '/*.png'
-                                                return glob.glob(input), glob.glob(output)
-
-                                            with gr.Row():
-                                                with gr.Box():
-                                                    with gr.Column():
-                                                        task_id = gr.Text(visible=True, label='Task Id')
-                                                    with gr.Column():
-                                                        api_hist_butt = gr.Button('查看(check)')
-                                            with gr.Row():
-                                                with gr.Column():
-                                                    input = gr.Gallery()
-                                                    pass
-                                                with gr.Column():
-                                                    output = gr.Gallery()
-                                                    pass
-                                            api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
-                            with gr.TabItem("模板实验"):
-                                with gr.Tabs():
-                                    with gr.TabItem("模板"):
-                                        # import scripts.templatemanager as templatemanager
-                                        stylesdata = gr.Dataframe(
-                                            value=tm.get_styles,
-                                            col_count=(len(tm.display_columns), 'fixed'),
-                                            wrap=False, max_rows=1000, show_label=True, interactive=False, min_width=80,
-                                            elem_id="style_editor_grid"
-                                        )
-                                        stylesdata.input(fn=tm.update_styles, inputs=[stylesdata], outputs=[stylesdata])
-                                    with gr.TabItem("历史记录"):
-                                        def index_list(name):
-                                            pth = os.path.join(datadir.template_test_images, name, 'output')
-                                            if not os.path.exists(pth):
-                                                return None
-                                            list = os.listdir(pth)
-                                            list.insert(0, '请选择')
-                                            # glob.glob(datadir.template_test_images.format(name=name) + '/*')
-                                            return gr.Dropdown.update(choices=list, value=list[0] if len(list) > 0 else None, interactive=True)
-                                        def search_template(name, idx):
-                                            output = os.path.join(datadir.template_test_images, name, 'output', idx)
-                                            controlnet = os.path.join(datadir.template_test_images, name, 'controlnet',
-                                                                      idx)
-                                            mask = os.path.join(datadir.template_test_images, name, 'mask', f'{idx}.png')
-                                            scene = os.path.join(datadir.template_test_images, name, 'scene', f'{idx}.png')
-                                            merge = os.path.join(datadir.template_test_images, name, 'merge', f'{idx}.png')
-
-
-                                            if not os.path.exists(output):
-                                                return None
-                                            output_list = os.listdir(output)
-                                            control_list = os.listdir(controlnet)
-                                            return [os.path.join(output, f) for f in output_list], \
-                                                [os.path.join(controlnet, f) for f in control_list], \
-                                                [mask], \
-                                                [scene], \
-                                                [merge]
-
-                                        with gr.Row():
-                                            with gr.Column(min_width=80):
-                                                with gr.Row():
-                                                    with gr.Column():
-                                                        h_template_name = gr.Text(label='模板名称', elem_id="s_template_name")
-                                                    with gr.Column():
-                                                        h_f_idx = gr.Dropdown(label='索引', choices=[],)
-                                                    with gr.Column():
-                                                        h_template_name.change(fn=index_list, inputs=[h_template_name], outputs=[h_f_idx])
-                                                        h_button = gr.Button('搜索(Refresh)', variant='primary')
-                                        with gr.Row():
-                                            with gr.Column(min_width=160):
-                                                h_template_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, height=250, label='模板图片', elem_id="h_template_img")
-                                                h_template_mask_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
-                                                                              height=250, label='mask',
-                                                                              elem_id="h_template_input",)
-                                                h_template_controlnet_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, label='controlnet', height=250)
-                                                h_merge_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
-                                                                         height=250, label='合成图像',
-                                                                         elem_id="h_merge_img",)
                                             with gr.Column():
-                                                h_output_img = gr.Gallery(preview=True, show_label=True, columns=4, rows=4,
-                                                                          height=500, label='输出图像',
-                                                                          elem_id="h_output_img", object_fit="cover")
-                                        h_button.click(fn=search_template, inputs=[h_template_name, h_f_idx],
-                                                       outputs=[h_output_img, h_template_controlnet_input, h_template_mask_input, h_template_img, h_merge_img])
+                                                task_id = gr.Text(visible=True, label='Task Id')
+                                            with gr.Column():
+                                                api_hist_butt = gr.Button('查看(check)')
+                                    with gr.Row():
+                                        with gr.Column():
+                                            input = gr.Gallery()
+                                            pass
+                                        with gr.Column():
+                                            output = gr.Gallery()
+                                            pass
+                                    api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
+                        with gr.TabItem("模板实验"):
+                            with gr.Tabs():
+                                with gr.TabItem("模板"):
+                                    # import scripts.templatemanager as templatemanager
+                                    stylesdata = gr.Dataframe(
+                                        value=tm.get_styles,
+                                        col_count=(len(tm.display_columns), 'fixed'),
+                                        wrap=False, max_rows=1000, show_label=True, interactive=False, min_width=80,
+                                        elem_id="style_editor_grid"
+                                    )
+                                    stylesdata.input(fn=tm.update_styles, inputs=[stylesdata], outputs=[stylesdata])
+                                with gr.TabItem("历史记录"):
+                                    def index_list(name):
+                                        pth = os.path.join(datadir.template_test_images, name, 'output')
+                                        if not os.path.exists(pth):
+                                            return None
+                                        list = os.listdir(pth)
+                                        list.insert(0, '请选择')
+                                        # glob.glob(datadir.template_test_images.format(name=name) + '/*')
+                                        return gr.Dropdown.update(choices=list, value=list[0] if len(list) > 0 else None, interactive=True)
+                                    def search_template(name, idx):
+                                        output = os.path.join(datadir.template_test_images, name, 'output', idx)
+                                        controlnet = os.path.join(datadir.template_test_images, name, 'controlnet',
+                                                                  idx)
+                                        mask = os.path.join(datadir.template_test_images, name, 'mask', f'{idx}.png')
+                                        scene = os.path.join(datadir.template_test_images, name, 'scene', f'{idx}.png')
+                                        merge = os.path.join(datadir.template_test_images, name, 'merge', f'{idx}.png')
+
+
+                                        if not os.path.exists(output):
+                                            return None
+                                        output_list = os.listdir(output)
+                                        control_list = os.listdir(controlnet)
+                                        return [os.path.join(output, f) for f in output_list], \
+                                            [os.path.join(controlnet, f) for f in control_list], \
+                                            [mask], \
+                                            [scene], \
+                                            [merge]
+
+                                    with gr.Row():
+                                        with gr.Column(min_width=80):
+                                            with gr.Row():
+                                                with gr.Column():
+                                                    h_template_name = gr.Text(label='模板名称', elem_id="s_template_name")
+                                                with gr.Column():
+                                                    h_f_idx = gr.Dropdown(label='索引', choices=[],)
+                                                with gr.Column():
+                                                    h_template_name.change(fn=index_list, inputs=[h_template_name], outputs=[h_f_idx])
+                                                    h_button = gr.Button('搜索(Refresh)', variant='primary')
+                                    with gr.Row():
+                                        with gr.Column(min_width=160):
+                                            h_template_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, height=250, label='模板图片', elem_id="h_template_img")
+                                            h_template_mask_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
+                                                                          height=250, label='mask',
+                                                                          elem_id="h_template_input",)
+                                            h_template_controlnet_input = gr.Gallery(preview=True, show_label=True, columns=2, rows=1, label='controlnet', height=250)
+                                            h_merge_img = gr.Gallery(preview=True, show_label=True, columns=2, rows=1,
+                                                                     height=250, label='合成图像',
+                                                                     elem_id="h_merge_img",)
+                                        with gr.Column():
+                                            h_output_img = gr.Gallery(preview=True, show_label=True, columns=4, rows=4,
+                                                                      height=500, label='输出图像',
+                                                                      elem_id="h_output_img", object_fit="cover")
+                                    h_button.click(fn=search_template, inputs=[h_template_name, h_f_idx],
+                                                   outputs=[h_output_img, h_template_controlnet_input, h_template_mask_input, h_template_img, h_merge_img])
 
 
             output_message = gr.Markdown()
