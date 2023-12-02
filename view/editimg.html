@@ -436,6 +436,8 @@
         reader.readAsDataURL(file);
     });
 
+
+
     //   删除图层
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Delete' || event.key == 'Backspace') {
@@ -446,6 +448,7 @@
         }
     });
 
+    //
     document.getElementById('sync_img').addEventListener("click", function () {
         if (pro_img == '') {
             alert('请先上传产品图！')
@@ -495,7 +498,7 @@
         add_coor()
     };
 
-    // 拉取场景图
+    //  拉取场景图
     function sceneImg(type = 1) {
         // return false
         var g_width = window.parent.document.querySelector('#g_width textarea');

@@ -568,3 +568,27 @@ class Api:
             return FileResponse(f"{project_dir}/worker_data/template/clothes_image.png")
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
+
+    async def shadow_imag(self, request: Request):
+        strt_time = time.time()
+        data = await request.json()
+        download_time = time.time() - strt_time
+        if data is None or data['image'] is None or data['x'] is None or data['y'] is None\
+                or data['blur'] is None or data['opacity'] is None or data['color'] is None or data['toggle'] is None:
+            return {"message": "data is None", "data": None, "duration": 0}
+
+        ia_logging.info(f"id_task:{data['id_task']}, Download Time:{download_time}")
+        log_echo("API Params", msg={
+            "api": request.url.path,
+            "client_host": request.client.host,
+            "host": request.headers['host'],
+            "download_time": download_time
+        }, level='info', path=request.url.path)
+        from scripts.gimpscripts.shadow import ImageShadow
+
+        try:
+
+            # ImageShadow(x=data['data']['x'])
+            return FileResponse(f"{project_dir}/worker_data/template/shadow_image.png")
+        except Exception as e:
+            return {"message": f"There was an error reading the image:{str(e)}"}

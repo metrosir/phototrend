@@ -15,6 +15,7 @@ from utils.utils import project_dir
 import scripts.templatemanager as tm
 import pandas as pd
 import datetime
+from PIL import Image
 
 import api.api as Api
 import time
@@ -575,11 +576,63 @@ def commodity_tab():
 
 
 def commodity_hand_ui():
-    with gr.Blocks() as G:
-        with gr.Blocks() as commodity:
-            gr.Markdown('实验中...')
+    def image_mod(input, x_offset, y_offset, blur, opacity):
+        from scripts.gimpscripts.shadow import Imageshadowss
+        shadow = Imageshadowss(x_offset, y_offset, blur, opacity)
+        output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
+        if not os.path.exists(output_dir):
+            pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
+        output = os.path.join(output_dir, datetime.datetime.now(
+            tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") + ".png")
+        shadow(input, output)
+        return output
+        # return image.rotate(45)
 
-        return G
+    cheetah = os.path.join(project_dir, "worker_data/template/simple_color_commodity/1.png")
+    examples = [
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/1.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/2.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/3.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/4.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/5.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/6.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/7.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/8.png"),
+        os.path.join(project_dir, "worker_data/template/simple_color_commodity/9.png"),
+    ]
+
+    with gr.Blocks() as G:
+        with gr.Row():
+            with gr.Column():
+                with gr.Row():
+                    x_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='X轴偏移', value=10, elem_id="x_offset")
+                    y_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='Y轴偏移', value=10, elem_id="y_offset")
+                    blur=gr.Slider(minimum=0, maximum=100, step=1, label='模糊半径', value=10, elem_id="blur")
+                    opacity=gr.Slider(minimum=0, maximum=100, step=0.01, label='不透明度', value=0.5, elem_id="opacity")
+                image_examples = gr.Gallery(
+                    examples,
+                    columns=10,
+                    scale=0.1,
+                    label="Examples",
+                    allow_preview=False,
+                    show_label=True,
+                    container=False,
+                    height=120,
+                    # object_fit="cover",
+                )
+                image_input = gr.Image(type="filepath", value=cheetah, height=500,image_mode='RGBA')
+            with gr.Column():
+                with gr.Row():
+                    run_button = gr.Button('生成', variant="primary")
+                with gr.Row():
+                    image_output = gr.Image(type="pil", interactive=False, show_label=False)
+                # with gr.Column():
+
+
+            def on_select(evt: gr.SelectData):
+                return examples[evt.index]
+            image_examples.select(on_select, outputs=image_input)
+            run_button.click(fn=image_mod, inputs=[image_input, x_offset, y_offset, blur, opacity], outputs=[image_output])
 
 def clothes_upload_file(human, clothes):
     pass
@@ -667,11 +720,11 @@ def clothes_ui():
     return G
 
 
-with gr.Blocks() as G:
+with gr.Blocks(mode='interface') as G:
     with gr.Tabs():
         with gr.TabItem('商品图'):
             commodity_tab()
-        with gr.TabItem("手持商品图"):
+        with gr.TabItem("纯色商品图"):
             commodity_hand_ui()
         with gr.TabItem("换装"):
             clothes_ui()
