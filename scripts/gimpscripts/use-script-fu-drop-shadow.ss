@@ -1,21 +1,72 @@
-(define (add-shadow infile outfile x y blur color opacity toggle )
+
+;(define (create-background-layer image layer color)
+; (let* ((new-layer (car (gimp-layer-new-from-drawable layer image))))
+; (gimp-image-add-layer image new-layer 0)
+; (gimp-drawable-set-name new-layer "Background")
+; (gimp-drawable-set-visible new-layer TRUE)
+; (gimp-context-set-foreground color)
+; (gimp-image-convert-rgb image)
+; (gimp-edit-bucket-fill new-layer BUCKET-FILL-FG LAYER-MODE-NORMAL 100 255 TRUE 0 0)
+; new-layer))
+
+;(define (create-background-layer image layer color)
+; (let* ((new-layer (car (gimp-layer-new-from-drawable layer image))))
+; (gimp-image-add-layer image new-layer 0)
+; (gimp-drawable-set-name new-layer "Background")
+; (gimp-drawable-set-visible new-layer TRUE)
+; (gimp-context-set-foreground color)
+; (gimp-image-convert-rgb image)
+; (gimp-edit-bucket-fill new-layer BUCKET-FILL-FG LAYER-MODE-NORMAL 100 255 TRUE 0 0)
+; new-layer))
+
+(define (create-background-layer image layer color)
+ (let* ((new-layer (car (gimp-layer-new-from-drawable layer image))))
+ (gimp-image-add-layer image new-layer 0)
+ (gimp-drawable-set-name new-layer "Background")
+ (gimp-drawable-set-visible new-layer TRUE)
+ (gimp-context-set-foreground color)
+ (if (not (eqv? (car (gimp-image-base-type image)) RGB))
+    (gimp-image-convert-rgb image))
+ (gimp-edit-bucket-fill new-layer BUCKET-FILL-FG LAYER-MODE-NORMAL 100 255 TRUE 0 0)
+ new-layer))
+
+
+
+(define (add-shadow infile outfile x y blur color opacity toggle bg-color)
  (display "add-shadow called")
  (newline)
  (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE infile infile)))
-        (drawable (car (gimp-image-get-active-layer image))))
-   ;;(script-fu-drop-shadow image drawable 10 10 10 '(0 0 0))
-   (script-fu-drop-shadow image drawable x y blur color opacity toggle)
-   (gimp-file-save RUN-NONINTERACTIVE image drawable outfile outfile)
-   ; 合并图层
-   (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
-     (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile))
+       (drawable (car (gimp-image-get-active-layer image)))
+       (background-layer car (create-background-layer image drawable bg-color)))
+  ;; 图像、图层、偏移量x、偏移量y、模糊半径、颜色、允许调整大小和模式
+  (script-fu-drop-shadow image drawable x y blur color opacity toggle)
+  (gimp-file-save RUN-NONINTERACTIVE image drawable outfile outfile)
+  ; 合并图层
+  (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
+    (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile)
+    merged)
+  (gimp-image-delete image)))
+
+
+;(define (add-shadow infile outfile x y blur color opacity toggle bg-color)
+; (display "add-shadow called")
+; (newline)
+; (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE infile infile)))
+;        (drawable (car (gimp-image-get-active-layer image)))
+;        (background-layer (create-background-layer image drawable bg-color)))
+;   ;;(script-fu-drop-shadow image drawable 10 10 10 '(0 0 0))
+;   (script-fu-drop-shadow image drawable x y blur color opacity toggle)
+;   (gimp-file-save RUN-NONINTERACTIVE image drawable outfile outfile)
+;   ; 合并图层
+;   (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
+;     (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile))
 ;   (do ((i 0 (+ i 1)))  ; 初始化循环变量i为0
 ;       ((= i 1))  ; 当i等于5时，结束循环
      ;; 图像、图层、偏移量x、偏移量y、模糊半径、颜色、允许调整大小和模式
 ;     (script-fu-drop-shadow image drawable 10 10 10 '(0 0 0) 50 100))  ; 调用script-fu-drop-shadow函数
 ;   (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
 ;     (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile))
-   (gimp-image-delete image)))
+;   (gimp-image-delete image)))
 
 (script-fu-register "add-shadow"
                   "Add Shadow"
@@ -35,3 +86,18 @@
 ;gimp -i -b '(add-shadow "/data1/aigc/phototrend/worker_data/history/simple_color_commodity/2023-12-03 00:31:22.png" "/data1/aigc/phototrend/worker_data/history/simple_color_commodity/2023-12-03 00:34:52.png" 50 10 20 "#000000" 1.23 0)' -b '(gimp-quit 0)'
 ;gimp -i -b '(add-shadow "/tmp/gradio/image.png" "/tmp/gradio/633398b0bd5fe317136d194b58751/image.png" "10" "10" "10" "#000000" "0.5" "0")' -b '(gimp-quit 0)'
 ;gimp -i -b '(add-shadow "/data1/aigc/gimp_test/input/deng.png" "/data1/aigc/gimp_test/output/deng.png")' -b '(gimp-quit 0)'
+
+;
+;(define (add-shadow infile outfile x y blur color opacity toggle bg-color)
+; (display "add-shadow called")
+; (newline)
+; (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE infile infile)))
+;       (drawable (car (gimp-image-get-active-layer image)))
+;       (background-layer (create-background-layer image drawable bg-color)))
+;  ;; 图像、图层、偏移量x、偏移量y、模糊半径、颜色、允许调整大小和模式
+;  (script-fu-drop-shadow image drawable x y blur color opacity toggle)
+;  (gimp-file-save RUN-NONINTERACTIVE image drawable outfile outfile)
+;  ; 合并图层
+;  (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
+;    (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile))
+;  (gimp-image-delete image)))

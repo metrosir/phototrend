@@ -576,15 +576,20 @@ def commodity_tab():
 
 
 def commodity_hand_ui():
-    def image_mod(input, x_offset, y_offset, blur, opacity):
+    def image_mod(input, x_offset, y_offset, blur, opacity, bg_color):
         from scripts.gimpscripts.shadow import Imageshadowss
-        shadow = Imageshadowss(x_offset, y_offset, blur, opacity)
+        shadow = Imageshadowss(x_offset, y_offset, blur, opacity, bg_color=bg_color)
         output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
         if not os.path.exists(output_dir):
             pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
         output = os.path.join(output_dir, datetime.datetime.now(
             tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") + ".png")
         shadow(input, output)
+
+        img = Image.open(output)
+        bg = Image.new('RGB', img.size, bg_color)
+        bg.paste(img, (0, 0), img)
+        bg.save(output)
         return output
         # return image.rotate(45)
 
@@ -609,10 +614,10 @@ def commodity_hand_ui():
                     y_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='Y轴偏移', value=10, elem_id="y_offset")
                     blur=gr.Slider(minimum=0, maximum=100, step=1, label='模糊半径', value=10, elem_id="blur")
                     opacity=gr.Slider(minimum=0, maximum=100, step=0.01, label='不透明度', value=0.5, elem_id="opacity")
+                    b_color = gr.ColorPicker(label="背景色", elem_id="b_color", value="#ffffff")
                 image_examples = gr.Gallery(
                     examples,
                     columns=10,
-                    scale=0.1,
                     label="Examples",
                     allow_preview=False,
                     show_label=True,
@@ -632,7 +637,7 @@ def commodity_hand_ui():
             def on_select(evt: gr.SelectData):
                 return examples[evt.index]
             image_examples.select(on_select, outputs=image_input)
-            run_button.click(fn=image_mod, inputs=[image_input, x_offset, y_offset, blur, opacity], outputs=[image_output])
+            run_button.click(fn=image_mod, inputs=[image_input, x_offset, y_offset, blur, opacity, b_color], outputs=[image_output])
 
 def clothes_upload_file(human, clothes):
     pass
