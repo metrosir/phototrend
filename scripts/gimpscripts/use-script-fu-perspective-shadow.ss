@@ -28,8 +28,8 @@
         ((> i gradient_strength))
         (if (< v-angle 135)
           ;            (gimp-drawable-edit-gradient-fill shadow-layer 0 0 FALSE 1 1 FALSE 0 height width 0)
-          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE 0 height width 0)
-          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE width 0 0 height)
+          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE 0 height (+ width 100) 0)
+          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE width 0 -100 height)
           )
         )
 
