@@ -38,7 +38,7 @@
  (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE infile infile)))
        (drawable (car (gimp-image-get-active-layer image)))
        (background-layer car (create-background-layer image drawable bg-color)))
-  ;; 图像、图层、偏移量x、偏移量y、模糊半径、颜色、允许调整大小和模式
+  ;; 图像、图层、偏移量x、偏移量y、模糊半径、颜色、不透明度、模式
   (script-fu-drop-shadow image drawable x y blur color opacity toggle)
   (gimp-file-save RUN-NONINTERACTIVE image drawable outfile outfile)
   ; 合并图层

@@ -19,6 +19,7 @@ from PIL import Image
 
 import api.api as Api
 import time
+from fastapi import Request as request
 
 
 def rmbg(image, is_result=False) -> str:
@@ -576,8 +577,8 @@ def commodity_tab():
 
 
 def commodity_hand_ui():
-    def image_mod(input, x_offset, y_offset, blur, opacity, bg_color):
-        from scripts.gimpscripts.shadow import Imageshadowss
+    from scripts.gimpscripts.shadow import Imageshadowss,ImagePerspectiveShadow
+    def image_shadow(input, x_offset, y_offset, blur, opacity, bg_color):
         shadow = Imageshadowss(x_offset, y_offset, blur, opacity, bg_color=bg_color)
         output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
         if not os.path.exists(output_dir):
@@ -591,11 +592,29 @@ def commodity_hand_ui():
         bg.paste(img, (0, 0), img)
         bg.save(output)
         return output
-        # return image.rotate(45)
 
-    cheetah = os.path.join(project_dir, "worker_data/template/simple_color_commodity/1.png")
+    def image_perspective_shadow(input, p_angle, p_distance, p_length, p_blur, p_opacity, p_interpolation, p_allow_resize, bg_color, p_gradient_strength):
+        shadow = ImagePerspectiveShadow(p_angle, p_distance, p_length, p_blur, p_opacity, bg_color, p_gradient_strength, p_interpolation, p_allow_resize)
+        output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
+        if not os.path.exists(output_dir):
+            pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
+        output = os.path.join(output_dir, datetime.datetime.now(
+            tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") + ".png")
+        shadow(input, output)
+
+        # 打开阴影图像
+        # shadow_image = Image.open(output).convert("RGBA")
+        # shadow.add_gradient_effect(shadow_image, output)
+
+        img = Image.open(output)
+        bg = Image.new('RGB', img.size, bg_color)
+        bg.paste(img, (0, 0), img)
+        bg.save(output)
+        return output
+
+    cheetah = os.path.join(project_dir, "worker_data/template/simple_color_commodity/2.png")
     examples = [
-        os.path.join(project_dir, "worker_data/template/simple_color_commodity/1.png"),
+        # os.path.join(project_dir, "worker_data/template/simple_color_commodity/1.png"),
         os.path.join(project_dir, "worker_data/template/simple_color_commodity/2.png"),
         os.path.join(project_dir, "worker_data/template/simple_color_commodity/3.png"),
         os.path.join(project_dir, "worker_data/template/simple_color_commodity/4.png"),
@@ -610,11 +629,32 @@ def commodity_hand_ui():
         with gr.Row():
             with gr.Column():
                 with gr.Row():
-                    x_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='X轴偏移', value=10, elem_id="x_offset")
-                    y_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='Y轴偏移', value=10, elem_id="y_offset")
-                    blur=gr.Slider(minimum=0, maximum=100, step=1, label='模糊半径', value=10, elem_id="blur")
-                    opacity=gr.Slider(minimum=0, maximum=100, step=0.01, label='不透明度', value=0.5, elem_id="opacity")
-                    b_color = gr.ColorPicker(label="背景色", elem_id="b_color", value="#ffffff")
+                    with gr.Tabs():
+                        with gr.TabItem("投影"):
+                            with gr.Row():
+                                x_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='X轴偏移', value=15, elem_id="x_offset")
+                                y_offset=gr.Slider(minimum=-600, maximum=600, step=1, label='Y轴偏移', value=10, elem_id="y_offset")
+                                blur=gr.Slider(minimum=0, maximum=100, step=1, label='模糊半径', value=22, elem_id="blur")
+                                opacity=gr.Slider(minimum=0, maximum=100, step=0.01, label='不透明度', value=20, elem_id="opacity")
+                                run_button = gr.Button('生成', variant="primary")
+                        # 判断当前请求的URL链接中是否有dev=1 的参数，如果有则显示
+                            print("gr.Request:", gr.Request)
+                        with gr.TabItem("透视投影"):
+                            with gr.Row():
+                                #角度、水平的相对距离、阴影的相对长度、模糊半径、颜色、不透明度、插值、允许改变大小
+                                p_angle = gr.Slider(minimum=-360, maximum=360, step=1, label='角度', value=150, elem_id="p_angle")
+                                p_distance =gr.Slider(minimum=0, maximum=24, step=0.1, label='水平距离', value=1, elem_id="p_distance")
+                                p_length = gr.Slider(minimum=0, maximum=24, step=0.01, label='相对长度', value=0.2, elem_id="p_length")
+                                p_blur = gr.Slider(minimum=0, maximum=100, step=1, label='模糊半径', value=40, elem_id="p_blur")
+                                p_opacity=gr.Slider(minimum=0, maximum=100, step=1, label='不透明度', value=40, elem_id="p_opacity")
+                                p_gradient_strength =gr.Slider(minimum=0, maximum=10, step=1, label='渐变强度', value=0, elem_id="p_gradient_strength")
+                                # p_gradient = gr.Dropdown(label='渐变', choices=['Abstract 1','Abstract 2','Abstract 3','Aneurism','Blinds','Blue Green','Browns','Brushed Aluminium','Burning Paper','Burning Transparency','CD','CD Half','Caribbean Blues','Coffee','Cold Steel','Cold Steel 2','Crown molding','Dark 1','Deep Sea','Default','Flare Glow Angular 1','Flare Glow Radial 1','Flare Glow Radial 2','Flare Glow Radial 3','Flare Glow Radial 4','Flare Radial 101','Flare Radial 102','Flare Radial 103','Flare Rays Radial 1','Flare Rays Radial 2','Flare Rays Size 1','Flare Sizefac 101','Four bars','French flag','French flag smooth','Full saturation spectrum CCW','Full saturation spectrum CW','German flag','German flag smooth','Golden','Greens','Horizon 1','Horizon 2','Incandescent','Land 1','Land and Sea','Metallic Something','Mexican flag','Mexican flag smooth','Nauseating Headache','Neon Cyan','Neon Green','Neon Yellow','Pastel Rainbow','Pastels','Purples','Radial Eyeball Blue','Radial Eyeball Brown','Radial Eyeball Green','Radial Glow 1','Radial Rainbow Hoop','Romanian flag','Romanian flag smooth','Rounded edge','Shadows 1','Shadows 2','Shadows 3','Skyline','Skyline polluted','Square Wood Frame','Sunrise','Three bars sin','Tropical Colors','Tube Red','Wood 1','Wood 2','Yellow Contrast','Yellow Orange'], elem_id="p_gradient", value='Flare Rays Radial 1', interactive=True, type="value")
+                                # p_gradient = gr.Textbox(label="渐变", lines=1, elem_id="p_gradient", value='Flare Rays Radial 1', visible=False)
+                                p_interpolation = gr.Dropdown(label='插值', choices=['无', '线性', '立方', '无光晕', '低光晕'], elem_id="p_interpolation", value='无', interactive=True, type="index")
+                                p_allow_resize = gr.Checkbox(label=f'允许改变大小', value=False
+                                                             , elem_id="p_allow_resize")
+                                run_button_p = gr.Button('生成', variant="primary")
+                b_color = gr.ColorPicker(label="背景色", elem_id="b_color", value="#ffffff")
                 image_examples = gr.Gallery(
                     examples,
                     columns=10,
@@ -628,16 +668,14 @@ def commodity_hand_ui():
                 image_input = gr.Image(type="filepath", value=cheetah, height=500,image_mode='RGBA')
             with gr.Column():
                 with gr.Row():
-                    run_button = gr.Button('生成', variant="primary")
-                with gr.Row():
                     image_output = gr.Image(type="pil", interactive=False, show_label=False)
-                # with gr.Column():
-
 
             def on_select(evt: gr.SelectData):
                 return examples[evt.index]
             image_examples.select(on_select, outputs=image_input)
-            run_button.click(fn=image_mod, inputs=[image_input, x_offset, y_offset, blur, opacity, b_color], outputs=[image_output])
+            run_button.click(fn=image_shadow, inputs=[image_input, x_offset, y_offset, blur, opacity, b_color], outputs=[image_output])
+            run_button_p.click(fn=image_perspective_shadow, inputs=[image_input, p_angle, p_distance, p_length, p_blur, p_opacity, p_interpolation, p_allow_resize, b_color, p_gradient_strength
+                                                                  ], outputs=[image_output])
 
 def clothes_upload_file(human, clothes):
     pass
