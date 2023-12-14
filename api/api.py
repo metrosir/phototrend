@@ -1,4 +1,3 @@
-
 import asyncio
 import copy
 import glob
@@ -11,7 +10,8 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSO
 from typing import Optional
 import os
 import pathlib
-from utils.image import convert_png_to_mask, mask_invert, remove_bg, decode_base64_to_image, encode_to_base64, encode_pil_to_base64
+from utils.image import convert_png_to_mask, mask_invert, remove_bg, decode_base64_to_image, encode_to_base64, \
+    encode_pil_to_base64
 import utils.datadir as datadir
 # from utils.req import interrogate
 from utils.utils import project_dir
@@ -23,7 +23,7 @@ import json
 
 from utils.constant import mode_params, self_innovate_mode, init_model, api_queue_dir, hosts
 from scripts.inpaint import Inpainting
-from scripts.piplines.controlnet_pre import lineart_image
+from scripts.piplines.controlnet_pre import lineart_image, scribble_xdog
 from utils.cmd_args import opts as shared
 from .call_queue import LocalFileQueue as Queue
 
@@ -66,9 +66,14 @@ def commodity_image_generate_api_params(request_data, id_task=None):
     sampler_name = request_data['preset'][0]['param']['sampler']
     width = request_data['preset'][0]['param']['width']
     height = request_data['preset'][0]['param']['height']
+    steps = request_data['preset'][0]['param']['steps']
+    cfg_scale = request_data['preset'][0]['param']['cfg_scale']
+    if cfg_scale is None:
+        cfg_scale = 7.5
     contr_inp_weight = mode_params[self_innovate_mode]['inpaint_weight']
     contr_ipa_weight = mode_params[self_innovate_mode]['ip-adapter_weight']
     contr_lin_weight = mode_params[self_innovate_mode]['lineart_weight']
+    contr_scribble_weight = mode_params[self_innovate_mode]['scribble_weight']
     if len(request_data['preset'][0]['param']['controlnets']) > 0:
         for controlnet in request_data['preset'][0]['param']['controlnets']:
             if controlnet['controlnet_module'] == 'inpaint_only+lama':
@@ -77,8 +82,10 @@ def commodity_image_generate_api_params(request_data, id_task=None):
                 contr_ipa_weight = controlnet['weight']
             elif controlnet['controlnet_module'] == 'lineart_realistic':
                 contr_lin_weight = controlnet['weight']
+            elif controlnet['controlnet_module'] == 'scribble_xdog':
+                contr_scribble_weight = controlnet['weight']
 
-    return input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height
+    return input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale
 
 
 queue = Queue(api_queue_dir)
@@ -139,9 +146,9 @@ def generate_count(count: int):
     if hosts.find(local_ip) != -1:
         hosts_list.remove(local_ip)
 
-    dis = count // (len(hosts_list)+1)
+    dis = count // (len(hosts_list) + 1)
     current_host = dis
-    if dis * (len(hosts_list)+1) != count:
+    if dis * (len(hosts_list) + 1) != count:
         current_host = dis + 1
     return current_host, dis, hosts_list
 
@@ -156,7 +163,7 @@ async def call_queue_task():
                 log_echo("Call Queue Task: ", msg=origin_data, level='info', path='call_queue_task')
                 data = json.loads(origin_data)
 
-                input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height \
+                input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
                     = commodity_image_generate_api_params(data['data'], id_task=data['id_task'])
                 if type(input_image) is str:
                     input_image = decode_base64_to_image(input_image)
@@ -180,7 +187,10 @@ async def call_queue_task():
                     #     # return await back_host_generate(host_list, dis_data, output_dir=output_dir)
                     #     return await back_host_generate(host_list, dis_data, output_dir=output_dir)
                     print("host_list:", host_list)
-                    sub_task = asyncio.create_task(async_back_host_generate(host_list, dis_data, datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", )))
+                    sub_task = asyncio.create_task(async_back_host_generate(host_list, dis_data,
+                                                                            datadir.api_generate_commodity_dir.format(
+                                                                                id_task=data['id_task'],
+                                                                                type="output", )))
 
                 pos_prompt = pos_prompt % interrogate.interrogate(input_image) if '%s' in pos_prompt else pos_prompt
 
@@ -190,8 +200,9 @@ async def call_queue_task():
                     pipe = gpipe
 
                 lineart_input_img = lineart_image(input_image=input_image, width=width)
-                lineart_mask_img = lineart_image(input_image=mask, width=width)
-                saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, lineart_mask_img])
+                # lineart_mask_img = lineart_image(input_image=mask, width=width)
+                scribble_img = scribble_xdog(img=mask, res=width)
+                saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, scribble_img])
                 pipe.set_controlnet_input([
                     # {
                     #     'scale': contr_ipa_weight,
@@ -201,15 +212,24 @@ async def call_queue_task():
                         'scale': contr_lin_weight,
                         'image': lineart_input_img
                     },
+                    # {
+                    #     'scale': 0.55,
+                    #     'image': lineart_mask_img
+                    # }
                     {
-                        'scale': 0.55,
-                        'image': lineart_mask_img
+                        'scale': contr_scribble_weight,
+                        'image': scribble_img
                     }
                 ])
 
-                async def pipe_run_inpaint(input_image,mask,pos_prompt,neg_prompt,ddim_steps,cfg_scale,seed,composite_chk,sampler_name,batch_count,width,height,contr_inp_weight,eta,output,ret_base64):
+                async def pipe_run_inpaint(input_image, mask, pos_prompt, neg_prompt, ddim_steps, cfg_scale, seed,
+                                           composite_chk, sampler_name, batch_count, width, height, contr_inp_weight,
+                                           eta, output, ret_base64):
                     loop = asyncio.get_running_loop()
-                    result = await loop.run_in_executor(None, pipe.run_inpaint, input_image, mask, pos_prompt, neg_prompt,ddim_steps,cfg_scale,seed,composite_chk,width,height,output,sampler_name,batch_count,contr_inp_weight,eta,ret_base64)
+                    result = await loop.run_in_executor(None, pipe.run_inpaint, input_image, mask, pos_prompt,
+                                                        neg_prompt, ddim_steps, cfg_scale, seed, composite_chk, width,
+                                                        height, output, sampler_name, batch_count, contr_inp_weight,
+                                                        eta, ret_base64)
                     return result
 
                 await pipe_run_inpaint(
@@ -217,8 +237,8 @@ async def call_queue_task():
                     mask=mask,
                     pos_prompt=pos_prompt,
                     neg_prompt=neg_prompt,
-                    ddim_steps=30,
-                    cfg_scale=7.5,
+                    ddim_steps=steps,
+                    cfg_scale=cfg_scale,
                     seed=-1,
                     composite_chk=True,
                     sampler_name=sampler_name,
@@ -389,7 +409,7 @@ class Api:
         )
         ret = []
         try:
-            input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height \
+            input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
                 = commodity_image_generate_api_params(data.get('data'))
 
             input_image = decode_base64_to_image(input_image)
@@ -403,8 +423,9 @@ class Api:
                 pipe = gpipe
 
             lineart_input_img = lineart_image(input_image=input_image, width=width)
-            lineart_mask_img = lineart_image(input_image=mask, width=width)
-            saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, lineart_mask_img])
+            # lineart_mask_img = lineart_image(input_image=mask, width=width)
+            scribble_img = scribble_xdog(img=mask, res=width)
+            saveimage(id_task=data['id_task'], _type="input", images=[lineart_input_img, scribble_img])
             pipe.set_controlnet_input([
                 # {
                 #     'scale': contr_ipa_weight,
@@ -414,9 +435,13 @@ class Api:
                     'scale': contr_lin_weight,
                     'image': lineart_input_img
                 },
+                # {
+                #     'scale': 0.55,
+                #     'image': lineart_mask_img
+                # }
                 {
-                    'scale': 0.55,
-                    'image': lineart_mask_img
+                    'scale': contr_scribble_weight,
+                    'image': scribble_img
                 }
             ])
 
@@ -426,8 +451,8 @@ class Api:
                     mask_image=mask,
                     prompt=pos_prompt,
                     n_prompt=neg_prompt,
-                    ddim_steps=30,
-                    cfg_scale=7.5,
+                    ddim_steps=steps,
+                    cfg_scale=cfg_scale,
                     seed=-1,
                     composite_chk=True,
                     # sampler_name="UniPC",
@@ -440,6 +465,7 @@ class Api:
                     output=datadir.api_generate_commodity_dir.format(id_task=data['id_task'], type="output", ),
                     ret_base64=True
                 )
+
             main_task = asyncio.create_task(pipe_run_inpaint())
             ret = await main_task
         except Exception as e:
@@ -573,7 +599,7 @@ class Api:
         strt_time = time.time()
         data = await request.json()
         download_time = time.time() - strt_time
-        if data is None or data['image'] is None or data['x'] is None or data['y'] is None\
+        if data is None or data['image'] is None or data['x'] is None or data['y'] is None \
                 or data['blur'] is None or data['opacity'] is None or data['color'] is None or data['toggle'] is None:
             return {"message": "data is None", "data": None, "duration": 0}
 

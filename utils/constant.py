@@ -81,8 +81,8 @@ init_model = {
         # },
         {
             'low_cpu_mem_usage': False,
-            'model_path': 'lllyasviel/control_v11p_sd15_scribble',
-            'subfolder': '',
+            'model_path': 'metrosir/phototrend',
+            'subfolder': 'controlnets/control_v11p_sd15_scribble',
             'scale': [],
             'device_map': None,
             'image': None,

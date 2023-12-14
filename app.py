@@ -69,14 +69,9 @@ def refresh_history_img(type=1):
 
 
 def upload_rem_img_result(img):
-    # return rmbg(img, True)
     img = img.crop(img.getbbox())
     path = rmbg(img, True)
-    # print(f"path:{path}")
-    # return  path
-    # output_images.update(value=path)
     return gr.Gallery.update(value=path, visible=True)
-    # return gr.Gallery.update(value=path[0], visible=True)
 
 
 def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count,
@@ -160,7 +155,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         #                                 negative_prompt=neg_prompt, scale=contr_ipa_weight)
 
         print("int(seed):", int(seed))
-        res = Api.gpipe.run_inpaint(
+        res, seeds = Api.gpipe.run_inpaint(
             input_image=comm_merge_scene_im,
             mask_image=mask_im,
             prompt=pos_prompt,
@@ -169,7 +164,6 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             cfg_scale=8.5,
             seed=int(seed),
             composite_chk=True,
-            # sampler_name="Euler a",
             sampler_name=sampler_name,
             iteration_count=batch_count,
             width=(int(width)//8)*8,
@@ -178,7 +172,8 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             eta=31337,
             output=generate_image_sub_dir,
             open_after=open_after,
-            after_params=after_params
+            after_params=after_params,
+            res_img_info=True,
         )
         if template_name is not None and template_name != '':
             import shutil
@@ -235,7 +230,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
             for f in filelist:
                 os.remove(os.path.join(controlnet_images_dir, f))
 
-        return res
+        return res, f'seed: {json.dumps(seeds)}'
 
 
 def save_commdity_tmpe(template_name, template_img, template_size, shape, coordinate, type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, width, height, contr_scribble_weight, ddim_steps, sampler_name):
@@ -457,6 +452,7 @@ def commodity_tab():
                         with gr.TabItem("生成结果(Generate Result)"):
                             with gr.Column():
                                 output_generate_images = gr.Gallery(label='Output', show_label=False, columns=4, rows=4, height=500, object_fit="contain")
+                                output_seeds = gr.Markdown()
                         with gr.TabItem('历史记录(History)'):
                             with gr.Column():
                                 with gr.Row():
@@ -567,7 +563,7 @@ def commodity_tab():
                                        ddim_steps, sampler_name, template_name,
                                        open_after, after_contrast, after_brightness, after_sharpeness, after_color_saturation, after_color_temperature, after_noise_alpha_final,
                                        seed,],
-                               outputs=[output_generate_images])
+                               outputs=[output_generate_images, output_seeds])
             # template_name, template_img, coordinate, type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, width, height, contr_scribble_weight, ddim_steps, sampler_name
             run_save_temp.click(fn=save_commdity_tmpe, inputs=[template_name, template_img, template_size, shape, coordinate, template_type, pos_prompt, neg_prompt,contr_inp_weight, contr_lin_weight, g_width, g_height, contr_scribble_weight, ddim_steps, sampler_name], outputs=[stylesdata])
             total_history.click(fn=refresh_history_img, outputs=[history_imgs])

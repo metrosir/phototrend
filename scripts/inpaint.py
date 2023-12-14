@@ -358,7 +358,7 @@ class Inpainting:
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
-                    open_after=None, after_params=None):
+                    open_after=None, after_params=None, res_img_info=False):
 
         if not type(input_image) is np.ndarray:
             if type(input_image) is str:
@@ -397,6 +397,7 @@ class Inpainting:
             width, height = init_image.size
 
         output_list = []
+        seeds = []
         iteration_count = iteration_count if iteration_count is not None else 1
         for count in range(int(iteration_count)):
             gc.collect()
@@ -475,6 +476,8 @@ class Inpainting:
                     output_list.append(encode_to_base64(output_image))
                 else:
                     output_list.append(output_image)
-
+            seeds.append(seed)
+        if res_img_info:
+            return output_list, seeds
         return output_list
 
