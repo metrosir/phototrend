@@ -35,16 +35,31 @@ def w_error(msg: str):
     pass
 
 
-def log_echo(title: str, msg: object, exception: Exception = None, is_collect: bool = False, level: str = "error", path: str = 'phototrend'):
+def truncate_large_fields(obj):
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if isinstance(value, str) and len(value) > 1000:
+                obj[key] = ''
+            else:
+                truncate_large_fields(value)
+    elif isinstance(obj, list):
+        for idx, item in enumerate(obj):
+            if isinstance(item, str) and len(item) > 1000:
+                obj[idx] = ''
+            elif isinstance(item, dict) or isinstance(item, list):
+                truncate_large_fields(obj)
+
+
+def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: bool = False, level: str = "error", path: str = 'phototrend'):
     import requests
     import traceback
     import json
     import threading
 
-    try:
-        msg = json.dumps(msg)
-    except:
-        pass
+    # try:
+    #     msg = json.dumps(msg)
+    # except:
+    #     pass
 
     if exception is None:
         data = {
@@ -52,7 +67,6 @@ def log_echo(title: str, msg: object, exception: Exception = None, is_collect: b
                 tz=datetime.timezone(datetime.timedelta(hours=8))
             ).strftime("%Y-%m-%d %H:%M:%S"),
             "title": title,
-            "msg": str(msg),
             "level": level,
             "env": PT_ENV}
     else:
@@ -62,12 +76,14 @@ def log_echo(title: str, msg: object, exception: Exception = None, is_collect: b
                 tz=datetime.timezone(datetime.timedelta(hours=8))
             ).strftime("%Y-%m-%d %H:%M:%S"),
             "title": title,
-            "msg": str(msg),
             "exception": str(exception),
             "level": level,
             "traceback": str(traceback_str),
             "env": PT_ENV}
 
+    truncate_large_fields(msg)
+    for k, v in msg.items():
+        data[f"__{k}"] = v
     data_str = ''
     try:
         data_str = json.dumps(data)

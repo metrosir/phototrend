@@ -1,9 +1,9 @@
 ;; 输入图像、输出图像、角度、水平的相对距离、阴影的相对长度、模糊半径、颜色、不透明度、插值、允许改变大小
-(define (add-perspective-shadow infile outfile v-angle x-distance shadow-length blur color opacity toggle allow-update-size gradient-type bg-color gradient_strength)
+(define (add-perspective-shadow infile outfile v-angle x-distance shadow-length blur color opacity enum allow-update-size gradient-type bg-color gradient_strength)
   (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE infile infile)))
           (drawable (car (gimp-image-get-active-layer image))))
     ;; 图像、图层、角度、水平的相对距离、阴影的相对长度、模糊半径、颜色、不透明度、插值、允许改变大小
-    (script-fu-perspective-shadow image drawable v-angle x-distance shadow-length blur color opacity toggle allow-update-size)
+    (script-fu-perspective-shadow image drawable v-angle x-distance shadow-length blur color opacity enum allow-update-size)
     (let* ((shadow-layer (car (gimp-image-get-layer-by-name image "Perspective Shadow")))
             (width (car (gimp-drawable-width shadow-layer)))
             (height (car (gimp-drawable-height shadow-layer)))
@@ -40,3 +40,4 @@
         )
       )
     (gimp-image-delete image)))
+;https://docs.gimp.org/2.2/zh_CN/index.html

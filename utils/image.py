@@ -35,14 +35,13 @@ def convert_png_to_mask(file_path, save_path):
     rgba.save(save_path, "PNG")
 
 
-def image_to_base64(img_path):
+def image_to_base64(img_path, base64_prefix=True):
     res = ''
     with open(img_path, "rb") as image_file:
         res = base64.b64encode(image_file.read()).decode('utf-8')
-    if res != '':
+    if res != '' and base64_prefix:
         res = f'data:image/png;base64,{res}'
-        return res
-    return False
+    return res
 
 
 def remove_bg(inputim, outputim, mask=False, alpha_matting=True):
@@ -134,12 +133,15 @@ from io import BytesIO
 import io
 
 
-def decode_base64_to_image(encoding):
+def decode_base64_to_image(encoding, convert="RGB", save_path=None):
     if encoding.startswith("data:image/"):
         encoding = encoding.split(";")[1].split(",")[1]
 
-    image = Image.open(BytesIO(base64.b64decode(encoding))).convert("RGB")
+    image = Image.open(BytesIO(base64.b64decode(encoding))).convert(convert)
 
+    if save_path:
+        image.save(save_path, format="PNG", quality=100)
+        return save_path
     # image = np.array(image)
     return image
 

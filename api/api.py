@@ -26,6 +26,7 @@ from scripts.inpaint import Inpainting
 from scripts.piplines.controlnet_pre import lineart_image, scribble_xdog
 from utils.cmd_args import opts as shared
 from .call_queue import LocalFileQueue as Queue
+from api.apis import *
 
 interrogate = scripts.interrogate.InterrogateModels()
 
@@ -263,24 +264,21 @@ async def call_queue_task():
 
 class Api:
     def __init__(self, app: FastAPI):
+        # app = app(debug=True)
         self.app = app
+        self.app.__init__(debug=True)
         self.app.add_api_route("/iframe", self.read_html_file, methods=["get"], response_class=HTMLResponse)
-        self.app.add_api_route("/iframe_clothes", self.read_clothes_html_file, methods=["get"],
-                               response_class=HTMLResponse)
+        self.app.add_api_route("/iframe_clothes", self.read_clothes_html_file, methods=["get"],response_class=HTMLResponse)
         self.app.add_api_route("/upload_image", self.upload_image, methods=["post"])
         self.app.add_api_route("/upload_clothes_image", self.upload_clothes_image, methods=["post"])
         self.app.add_api_route("/deft_scene", self.deft_scene, methods=["get"])
         self.app.add_api_route("/human_imag", self.human_imag, methods=["get"])
         self.app.add_api_route("/clothes_imag", self.clothes_imag, methods=["get"])
-
         self.app.add_api_route("/v1/image/interrogate", self.interrogate, methods=["post"])
-
-        self.app.add_api_route("/v1/commodity_image/generate", self.commodity_image_generate, methods=["post"],
-                               response_class=JSONResponse)
-        self.app.add_api_route("/v1/commodity_image/reception", self.commodity_image_reception, methods=["post"],
-                               response_class=JSONResponse)
-        self.app.add_api_route("/v1/commodity_image/result", self.commodity_image_result, methods=["get"],
-                               response_class=JSONResponse)
+        self.app.add_api_route("/v1/commodity_image/generate", self.commodity_image_generate, methods=["post"],response_class=JSONResponse)
+        self.app.add_api_route("/v1/commodity_image/reception", self.commodity_image_reception, methods=["post"],response_class=JSONResponse)
+        self.app.add_api_route("/v1/commodity_image/result", self.commodity_image_result, methods=["get"],response_class=JSONResponse)
+        self.app.add_api_route("/v1/image/shadow", ImageShadowV1().__call__, methods=["post"], response_class=JSONResponse)
 
         # self.queue = Queue(api_queue_dir)
 
@@ -595,7 +593,7 @@ class Api:
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
 
-    async def shadow_imag(self, request: Request):
+    async def image_shadow_generate(self, request: Request):
         strt_time = time.time()
         data = await request.json()
         download_time = time.time() - strt_time

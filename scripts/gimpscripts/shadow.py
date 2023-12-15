@@ -4,8 +4,17 @@ import threading
 import utils.pt_logging as pt_logging
 from PIL import Image
 import numpy as np
-import  cv2
+import cv2
 
+from utils.image import image_to_base64
+
+
+def add_background_color(image_path, bg_color):
+    img = Image.open(image_path)
+    bg = Image.new('RGB', img.size, bg_color)
+    bg.paste(img, (0, 0), img)
+    bg.save(image_path)
+    return image_path
 
 class Imageshadowss:
     def __init__(self, x_offset, y_offset, blur, opacity, toggle=0, color="#000000", bg_color="#ffffff"):
@@ -17,15 +26,18 @@ class Imageshadowss:
         self.toggle = toggle
         self.bg_color = bg_color
 
-    def __call__(self, img_input_path, img_output_path):
+    def __call__(self, img_input_path, img_output_path, ret_base64=False):
         try:
-            lock = threading.Lock()
-            lock.acquire()
+            # lock = threading.Lock()
+            # lock.acquire()
             # infile outfile x y blur color opacity toggle
             cmd=f"flatpak run org.gimp.GIMP//stable -i -b '(add-shadow \"{img_input_path}\" \"{img_output_path}\" {self.x_offset} {self.y_offset} {self.blur} \"{self.color}\" {self.opacity} {self.toggle} \"{self.bg_color}\")' -b '(gimp-quit 0)'"
-            print(cmd)
+            pt_logging.ia_logging.info(cmd)
             os.system(cmd)
-            lock.release()
+            # lock.release()
+            add_background_color(img_output_path, self.bg_color)
+            if ret_base64:
+                return image_to_base64(img_output_path, False)
         except Exception as e:
             pt_logging.log_echo(
                 title="add-shadow error",
@@ -33,10 +45,9 @@ class Imageshadowss:
                 exception=e,
                 level="error",
             )
-            return False
+            raise e
         finally:
             pass
-        return True
 
 class ImagePerspectiveShadow:
 
@@ -59,18 +70,20 @@ class ImagePerspectiveShadow:
             allow_update_size = 1
         self.allow_update_size = allow_update_size
 
-    def __call__(self, img_input_path, img_output_path):
+    def __call__(self, img_input_path, img_output_path, ret_base64=False):
         try:
-            lock = threading.Lock()
-            lock.acquire()
-            v_angle = self.get_angle(img_input_path)
-            print("v_angle:", v_angle)
+            # lock = threading.Lock()
+            # lock.acquire()
+            # v_angle = self.get_angle(img_input_path)
 
             # infile outfile x y blur color opacity toggle
             cmd=f"flatpak run org.gimp.GIMP//stable -i -b '(add-perspective-shadow \"{img_input_path}\" \"{img_output_path}\" {self.v_angle} {self.x_distance} {self.shadow_length} {self.blur} \"{self.color}\" {self.opacity} {self.toggle}  {self.allow_update_size} \"{self.gradient}\" \"{self.bg_color}\" {self.gradient_strength})' -b '(gimp-quit 0)'"
-            print(cmd)
+            pt_logging.ia_logging.info(cmd)
             os.system(cmd)
-            lock.release()
+            # lock.release()
+            add_background_color(img_output_path, self.bg_color)
+            if ret_base64:
+                return image_to_base64(img_output_path, False)
         except Exception as e:
             pt_logging.log_echo(
                 title="add-shadow error",
@@ -78,10 +91,9 @@ class ImagePerspectiveShadow:
                 exception=e,
                 level="error",
             )
-            return False
+            raise e
         finally:
             pass
-        return True
 
 
     # 获取旋转角度

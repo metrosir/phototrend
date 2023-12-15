@@ -13,8 +13,8 @@ def_vae = {
     "commodity_hand": "",
 }
 
-sd_mode='SDWebui'
-self_innovate_mode='Self-Innovate'
+sd_mode = 'SDWebui'
+self_innovate_mode = 'Self-Innovate'
 # 作图模式
 generate_mode = {
     sd_mode: sd_mode,
@@ -28,7 +28,7 @@ mode_params = {
         'ip-adapter_weight': 0.55,
         'lineart_weight': 0.7,
         'scribble_weight': 0.7,
-        'sampler_step':30,
+        'sampler_step': 30,
         'sampler_name': 'UniPC',
         'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality,<lora:add_detail:1>',
         'negative_prompt': '(human:1.2),realisticvision-negative-embedding',
@@ -40,7 +40,7 @@ mode_params = {
         # 'lineart_weight': 0.7,
         'lineart_weight': 0.2,
         'scribble_weight': 2,
-        'sampler_step':10,
+        'sampler_step': 10,
         'sampler_name': 'UniPC',
         # 'prompt': '\n (high_contrast), RAW photo,realistic,dramatic lighting,ultra high res,best quality,high quality',
         'prompt': '\n (the enhanced ones have higher saturation of colour), RAW photo,dramatic lighting,ultra high res, a detailed matte painting, 8k, masterpiece, best quality,high quality',
@@ -49,7 +49,7 @@ mode_params = {
 }
 
 init_model = {
-    'base_mode':'metrosir/realistic',
+    'base_mode': 'metrosir/realistic',
     # 'base_mode':'danbrown/RevAnimated-v1-2-2',
     # 'base_mode':'twn39/RealisticVisionV51',
     # 'base_mode':'twn39/majicmixRealisticV7',
@@ -92,6 +92,56 @@ init_model = {
         'model_id': f'{project_dir}/models/textual_inversion/negative_prompt/realisticvision-negative-embedding.pt',
         'token': 'realisticvision-negative-embedding',
         'weight_name': 'string_to_param',
+    }
+}
+
+shadow = {
+    "plane": {
+        "left": {
+            "x": -15,
+            "y": 10,
+            "blur": 22,
+            "opacity": 20,
+            "bg_color": "#ffffff",
+        },
+        "right": {
+            "x": 15,
+            "y": 10,
+            "blur": 22,
+            "opacity": 20,
+            "bg_color": "#ffffff",
+        },
+    },
+    "perspective": {
+        "left": {
+            "angle": 170,
+            # 水平距离
+            "distance": 1,
+            # 相对长度
+            "length": 0.5,
+            # 模糊程度
+            "blur": 25,
+            # 不透明度
+            "opacity": 100,
+            # 0:'最近邻插值', 1:'线性插值', 2:'立方插值', 3:'无晕圈插值', 4:'低晕圈插值'
+            "interpolation": 0,
+            # 渐变程度，0-10
+            "gradient": 2,
+            "allow_resize": False,
+            "bg_color": "#ffffff",
+        },
+        "right": {
+            "angle": 10,
+            "distance": 1,
+            "length": 0.5,
+            "blur": 25,
+            "opacity": 100,
+            # 0:'最近邻插值', 1:'线性插值', 2:'立方插值', 3:'无晕圈插值', 4:'低晕圈插值'
+            "interpolation": 0,
+            "gradient": 2,
+            "allow_resize": False,
+            "bg_color": "#ffffff",
+        },
     }
 }
 
