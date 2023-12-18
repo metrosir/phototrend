@@ -81,7 +81,7 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
             "traceback": str(traceback_str),
             "env": PT_ENV}
 
-    if msg is not None:
+    if msg is not None and isinstance(msg, dict):
         truncate_large_fields(msg)
         for k, v in msg.items():
             data[f"__{k}"] = v
