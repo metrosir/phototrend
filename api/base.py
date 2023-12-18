@@ -27,7 +27,7 @@ class ApiBase(ABC):
         # self.duration = round(time.time() - start_time, 5)
 
     async def __call__(self, request: Request):
-        self.data = {}
+        self.data = []
         self.status = 200
         self.message = 'success'
         self.duration = 0
