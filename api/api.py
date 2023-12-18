@@ -162,7 +162,9 @@ async def call_queue_task():
             origin_data = queue.dequeue(is_complete=False)
             if origin_data is not None:
                 data = json.loads(origin_data)
-                log_echo("Call Queue Task: ", msg=data, level='info', path='call_queue_task')
+                log_echo("Call Queue Task: ", msg={
+                    "exec_args": json.dumps(data)
+                }, level='info', path='call_queue_task')
 
                 input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
                     = commodity_image_generate_api_params(data['data'], id_task=data['id_task'])
@@ -257,7 +259,9 @@ async def call_queue_task():
                     print("sub_task_result:", sub_task_result)
                 queue.complete(origin_data)
         except Exception as e:
-            log_echo("API Call Queue Error", msg=data, exception=e, is_collect=True, path='call_queue_task')
+            log_echo("API Call Queue Error", msg={
+                "exec_args": json.dumps(data)
+            }, exception=e, is_collect=True, path='call_queue_task')
         finally:
             time.sleep(0.5)
 
