@@ -31,7 +31,7 @@ class Imageshadowss:
             # lock = threading.Lock()
             # lock.acquire()
             # infile outfile x y blur color opacity toggle
-            cmd=f"flatpak run org.gimp.GIMP//stable -i -b '(add-shadow \"{img_input_path}\" \"{img_output_path}\" {self.x_offset} {self.y_offset} {self.blur} \"{self.color}\" {self.opacity} {self.toggle} \"{self.bg_color}\")' -b '(gimp-quit 0)'"
+            cmd=f"unset LD_PRELOAD;flatpak run org.gimp.GIMP//stable -i -b '(add-shadow \"{img_input_path}\" \"{img_output_path}\" {self.x_offset} {self.y_offset} {self.blur} \"{self.color}\" {self.opacity} {self.toggle} \"{self.bg_color}\")' -b '(gimp-quit 0)'"
             pt_logging.ia_logging.info(cmd)
             os.system(cmd)
             # lock.release()
@@ -77,7 +77,7 @@ class ImagePerspectiveShadow:
             # v_angle = self.get_angle(img_input_path)
 
             # infile outfile x y blur color opacity toggle
-            cmd=f"flatpak run org.gimp.GIMP//stable -i -b '(add-perspective-shadow \"{img_input_path}\" \"{img_output_path}\" {self.v_angle} {self.x_distance} {self.shadow_length} {self.blur} \"{self.color}\" {self.opacity} {self.toggle}  {self.allow_update_size} \"{self.gradient}\" \"{self.bg_color}\" {self.gradient_strength})' -b '(gimp-quit 0)'"
+            cmd=f"unset LD_PRELOAD;flatpak run org.gimp.GIMP//stable -i -b '(add-perspective-shadow \"{img_input_path}\" \"{img_output_path}\" {self.v_angle} {self.x_distance} {self.shadow_length} {self.blur} \"{self.color}\" {self.opacity} {self.toggle}  {self.allow_update_size} \"{self.gradient}\" \"{self.bg_color}\" {self.gradient_strength})' -b '(gimp-quit 0)'"
             pt_logging.ia_logging.info(cmd)
             os.system(cmd)
             # lock.release()
