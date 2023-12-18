@@ -56,7 +56,7 @@ class ApiBase(ABC):
                 "req_params": str(request.query_params),
                 "req_body": self.request,
                 "transfer_duration": transfer_duration,
-            }, level="error", is_collect=True)
+            }, level="error", is_collect=True, path=request.url.path)
         finally:
             self.after(request, transfer_duration=transfer_duration)
             # response_fields = ApiResponse.__annotations__.keys()
@@ -98,4 +98,4 @@ class ApiBase(ABC):
         }
         for k, v in kwargs.items():
             msg[k] = v
-        log_echo(title="api error", exception=None, msg=msg, level="info", )
+        log_echo(title="api error", exception=None, msg=msg, level="info", path=req.url.path)
