@@ -69,7 +69,7 @@ def commodity_image_generate_api_params(request_data, id_task=None):
     height = request_data['preset'][0]['param']['height']
     steps = request_data['preset'][0]['param']['steps']
     cfg_scale = request_data['preset'][0]['param']['cfg_scale']
-    if cfg_scale is None:
+    if cfg_scale is None or cfg_scale == 0:
         cfg_scale = 7.5
     contr_inp_weight = mode_params[self_innovate_mode]['inpaint_weight']
     contr_ipa_weight = mode_params[self_innovate_mode]['ip-adapter_weight']
