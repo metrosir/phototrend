@@ -161,8 +161,8 @@ async def call_queue_task():
         try:
             origin_data = queue.dequeue(is_complete=False)
             if origin_data is not None:
-                log_echo("Call Queue Task: ", msg=origin_data, level='info', path='call_queue_task')
                 data = json.loads(origin_data)
+                log_echo("Call Queue Task: ", msg=data, level='info', path='call_queue_task')
 
                 input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
                     = commodity_image_generate_api_params(data['data'], id_task=data['id_task'])
