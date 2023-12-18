@@ -81,9 +81,10 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
             "traceback": str(traceback_str),
             "env": PT_ENV}
 
-    truncate_large_fields(msg)
-    for k, v in msg.items():
-        data[f"__{k}"] = v
+    if msg is not None:
+        truncate_large_fields(msg)
+        for k, v in msg.items():
+            data[f"__{k}"] = v
     data_str = ''
     try:
         data_str = json.dumps(data)
