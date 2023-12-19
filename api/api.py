@@ -68,6 +68,7 @@ def commodity_image_generate_api_params(request_data, id_task=None):
     width = request_data['preset'][0]['param']['width']
     height = request_data['preset'][0]['param']['height']
     steps = request_data['preset'][0]['param']['steps']
+    steps = 10
     cfg_scale = request_data['preset'][0]['param']['cfg_scale']
     if cfg_scale is None or cfg_scale == 0:
         cfg_scale = 7.5
