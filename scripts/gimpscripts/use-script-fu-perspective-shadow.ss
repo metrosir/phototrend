@@ -32,6 +32,7 @@
           (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE width 0 -100 height)
           )
         )
+        (gimp-layer-translate shadow-layer 0 -5)
 
 ;      (gimp-file-save RUN-NONINTERACTIVE image shadow-layer outfile outfile)
       (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))

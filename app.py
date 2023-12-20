@@ -573,24 +573,24 @@ def commodity_tab():
 
 def commodity_hand_ui():
     from scripts.gimpscripts.shadow import Imageshadowss,ImagePerspectiveShadow
-    def image_shadow(input, x_offset, y_offset, blur, opacity, bg_color):
+    async def image_shadow(input, x_offset, y_offset, blur, opacity, bg_color):
         shadow = Imageshadowss(x_offset, y_offset, blur, opacity, bg_color=bg_color)
         output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
         if not os.path.exists(output_dir):
             pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
         output = os.path.join(output_dir, datetime.datetime.now(
             tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") + ".png")
-        shadow(input, output)
+        await shadow(input, output)
         return output
 
-    def image_perspective_shadow(input, p_angle, p_distance, p_length, p_blur, p_opacity, p_interpolation, p_allow_resize, bg_color, p_gradient_strength):
+    async def image_perspective_shadow(input, p_angle, p_distance, p_length, p_blur, p_opacity, p_interpolation, p_allow_resize, bg_color, p_gradient_strength):
         shadow = ImagePerspectiveShadow(p_angle, p_distance, p_length, p_blur, p_opacity, bg_color, p_gradient_strength, p_interpolation, p_allow_resize)
         output_dir = os.path.join(project_dir, "worker_data/history/simple_color_commodity/")
         if not os.path.exists(output_dir):
             pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
         output = os.path.join(output_dir, datetime.datetime.now(
             tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") + ".png")
-        shadow(input, output)
+        await shadow(input, output)
 
         # 打开阴影图像
         # shadow_image = Image.open(output).convert("RGBA")
