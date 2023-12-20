@@ -329,7 +329,7 @@ class Api:
         result['duration'] = time.time() - strt_time
         return result
 
-    def commodity_image_result(self, request: Request):
+    async def commodity_image_result(self, request: Request):
 
         result = {
             "data": [],
@@ -378,7 +378,7 @@ class Api:
                 "req_params": str(request.query_params),
             }, e, is_collect=True, path=request.url.path)
             result['message'] = str(e)
-            result['message'] = 500
+            result['status'] = 500
 
         return result
 

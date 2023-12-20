@@ -33,7 +33,7 @@
           )
         )
 
-      (gimp-file-save RUN-NONINTERACTIVE image shadow-layer outfile outfile)
+;      (gimp-file-save RUN-NONINTERACTIVE image shadow-layer outfile outfile)
       (let* ((merged (car (gimp-image-merge-visible-layers image CLIP-TO-IMAGE))))
         (gimp-file-save RUN-NONINTERACTIVE image merged outfile outfile)
         merged

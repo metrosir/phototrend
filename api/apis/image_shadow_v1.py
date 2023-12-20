@@ -12,6 +12,7 @@ import asyncio
 
 
 class ImageShadowV1(ApiBase):
+    # semaphore = asyncio.Semaphore(10)
 
     # async def __call__(self, request: Request):
     #     await self.__call__(request=request)
@@ -34,12 +35,14 @@ class ImageShadowV1(ApiBase):
 
     async def action(self):
         ia_logging.info(f"ImageShadowV1 id_task: {self.params['id_task']}")
-
+        import uuid
+        # async with self.semaphore:
         input_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/input/")
         output_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/output/")
         pathlib.Path(input_path).mkdir(parents=True, exist_ok=True)
         pathlib.Path(output_path).mkdir(parents=True, exist_ok=True)
 
+        # uuid = uuid.uuid4().hex
         input_path = os.path.join(input_path, f"0.png")
         output_path = os.path.join(output_path, f"0.png")
 
@@ -65,7 +68,7 @@ class ImageShadowV1(ApiBase):
                 shadow['perspective'][self.params['data']['target']]['interpolation'],
                 shadow['perspective'][self.params['data']['target']]['allow_resize'],
             )
-        im_data = im_shadow(input_path, output_path, True)
+        im_data = await im_shadow(input_path, output_path, True)
         return [
             im_data
         ]

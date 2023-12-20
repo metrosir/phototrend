@@ -98,4 +98,4 @@ class ApiBase(ABC):
         }
         for k, v in kwargs.items():
             msg[k] = v
-        log_echo(title="api error", exception=None, msg=msg, level="info", path=req.url.path)
+        log_echo(title="api info", exception=None, msg=msg, level="info", path=req.url.path)
