@@ -8,6 +8,7 @@ import cv2
 import asyncio
 
 from utils.image import image_to_base64
+from utils.constant import PT_ENV
 
 
 def add_background_color(image_path, bg_color):
@@ -68,7 +69,10 @@ class ImagePerspectiveShadow:
         self.opacity = opacity
         self.toggle = toggle
         # self.gradient = 'Flare Rays Radial 1'
-        self.gradient = '前景到透明'
+        if PT_ENV == 'ptdev' or PT_ENV == 'pt_dev':
+            self.gradient = '前景到透明'
+        else:
+            self.gradient = 'FG to Transparent'
         self.gradient_strength = p_gradient_strength
         self.bg_color = bg_color
         if allow_update_size is None or allow_update_size == False:
