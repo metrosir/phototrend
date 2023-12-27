@@ -468,8 +468,16 @@ def commodity_tab():
                                     def disp_apihistory(id_task):
                                         input = datadir.api_generate_commodity_dir.format(id_task=id_task,
                                                                                           type='input') + '/*.png'
-                                        output = datadir.api_generate_commodity_dir.format(id_task=id_task,
+                                        imglist = glob.glob(input)
+                                        if len(imglist) > 0:
+                                            output = datadir.api_generate_commodity_dir.format(id_task=id_task,
                                                                                            type='output') + '/*.png'
+                                            return glob.glob(input), glob.glob(output)
+
+                                        input = datadir.api_shadow_simple_gb_dir.format(id_task=id_task,
+                                                                                        type='input') + '/*.png'
+                                        output = datadir.api_shadow_simple_gb_dir.format(id_task=id_task,
+                                                                                         type='output') + '/*.png'
                                         return glob.glob(input), glob.glob(output)
 
                                     with gr.Row():

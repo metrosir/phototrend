@@ -4,6 +4,7 @@ from utils.constant import shadow
 from utils.constant import project_dir
 from utils.pt_logging import ia_logging
 from utils.image import decode_base64_to_image
+from utils.datadir import api_shadow_simple_gb_dir
 
 import pathlib
 import os
@@ -37,8 +38,10 @@ class ImageShadowV1(ApiBase):
         ia_logging.info(f"ImageShadowV1 id_task: {self.params['id_task']}")
         import uuid
         # async with self.semaphore:
-        input_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/input/")
-        output_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/output/")
+        # input_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/input/")
+        # output_path = os.path.join(project_dir, f"worker_data/history/simple_color_commodity/{self.params['id_task']}/output/")
+        input_path = api_shadow_simple_gb_dir.format(id_task=self.params['id_task'], type="input")
+        output_path = api_shadow_simple_gb_dir.format(id_task=self.params['id_task'], type="output")
         pathlib.Path(input_path).mkdir(parents=True, exist_ok=True)
         pathlib.Path(output_path).mkdir(parents=True, exist_ok=True)
 

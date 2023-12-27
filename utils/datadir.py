@@ -58,7 +58,9 @@ clothes_generate_image_dir = clothes_history + '/{uuid}/clothes_generate_image/{
 clothes_generate_glob_img = clothes_history + '/*/clothes_generate_image/*/*.png'
 
 
+# api 输入图片和输出图片
 api_generate_commodity_dir = history + '/api_generate_commodity/{id_task}/{type}'
+api_shadow_simple_gb_dir = history+"/api_shadow_simple_bg_img/{id_task}/{type}"
 
 generate_inpaint_image_dir = history = f"{project_dir}/worker_data/inpaint_output/"
 pathlib.Path(generate_inpaint_image_dir).mkdir(parents=True, exist_ok=True)
