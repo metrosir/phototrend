@@ -7,6 +7,7 @@
     (let* ((shadow-layer (car (gimp-image-get-layer-by-name image "Perspective Shadow")))
             (width (car (gimp-drawable-width shadow-layer)))
             (height (car (gimp-drawable-height shadow-layer)))
+;            (gradients (car (gimp-gradients-get-list "")))
             )
 
       (gimp-context-set-gradient gradient-type)
@@ -24,12 +25,26 @@
 ;        (gimp-gradient-segment-set-left-color new-gradient-name i (list 0 0 0) 0)
 ;        ;; 设置段的右侧颜色为透明色
 ;        (gimp-gradient-segment-set-right-color new-gradient-name i bg-color 100))
+;      (for-each (lambda (gradient) (display gradient) (newline)) rr)
+;      (define (print-gradients)
+;        (let* ((result (gimp-gradients-get-list "")))
+;              (for-each (lambda (gradient) (display gradient) (display ",") (newline)) result)))
+;;          (display result)
+;;          (newline)))
+;      (print-gradients)
+
+
+      (gimp-context-set-foreground bg-color)
+;      (gimp-context-set-background bg-color)
+;      (gimp-context-set-gradient-fg-bg-rgb)
+;      (gimp-context-set-gradient gradient-type)
+          ;        "Blend color space @{ GRADIENT-BLEND-RGB-PERCEPTUAL (0), GRADIENT-BLEND-RGB-LINEAR (1), GRADIENT-BLEND-CIE-LAB (2) @}"
+;          (gimp-context-set-gradient-blend-color-space 2)
       (do ((i 1 (+ i 1)))
         ((> i gradient_strength))
         (if (< v-angle 135)
-          ;            (gimp-drawable-edit-gradient-fill shadow-layer 0 0 FALSE 1 1 FALSE 0 height width 0)
-          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE 0 height (+ width 100) 0)
-          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE width 0 -100 height)
+          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE (+ width 200) 0 0 height)
+          (gimp-drawable-edit-gradient-fill shadow-layer 10 200 FALSE 1 1 TRUE -200 height width 0)
           )
         )
         (gimp-layer-translate shadow-layer 0 -5)
