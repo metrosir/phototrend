@@ -67,7 +67,8 @@ class ImagePerspectiveShadow:
         self.color = color
         self.opacity = opacity
         self.toggle = toggle
-        self.gradient = 'Flare Rays Radial 1'
+        # self.gradient = 'Flare Rays Radial 1'
+        self.gradient = '前景到透明'
         self.gradient_strength = p_gradient_strength
         self.bg_color = bg_color
         if allow_update_size is None or allow_update_size == False:

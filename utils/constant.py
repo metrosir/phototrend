@@ -116,7 +116,7 @@ shadow = {
         "left": {
             "angle": 170,
             # 水平距离
-            "distance": 1,
+            "distance": 0.5,
             # 相对长度
             "length": 0.5,
             # 模糊程度
@@ -126,19 +126,19 @@ shadow = {
             # 0:'最近邻插值', 1:'线性插值', 2:'立方插值', 3:'无晕圈插值', 4:'低晕圈插值'
             "interpolation": 0,
             # 渐变程度，0-10
-            "gradient": 2,
+            "gradient": 1,
             "allow_resize": False,
             "bg_color": "#ffffff",
         },
         "right": {
             "angle": 10,
-            "distance": 1,
+            "distance": 0.5,
             "length": 0.5,
             "blur": 25,
             "opacity": 100,
             # 0:'最近邻插值', 1:'线性插值', 2:'立方插值', 3:'无晕圈插值', 4:'低晕圈插值'
             "interpolation": 0,
-            "gradient": 2,
+            "gradient": 1,
             "allow_resize": False,
             "bg_color": "#ffffff",
         },
