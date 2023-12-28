@@ -38,16 +38,16 @@ def w_error(msg: str):
 def truncate_large_fields(obj):
     if isinstance(obj, dict):
         for key, value in obj.items():
-            if isinstance(value, str) and len(value) > 1000:
-                obj[key] = ''
+            if isinstance(value, str) and len(value) > 10000:
+                obj[key] = value[:1000]
             else:
                 truncate_large_fields(value)
     elif isinstance(obj, list):
         for idx, item in enumerate(obj):
-            if isinstance(item, str) and len(item) > 1000:
-                obj[idx] = ''
+            if isinstance(item, str) and len(item) > 10000:
+                obj[idx] = item[:1000]
             elif isinstance(item, dict) or isinstance(item, list):
-                truncate_large_fields(obj)
+                truncate_large_fields(item)
 
 
 def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: bool = False, level: str = "error", path: str = 'phototrend'):
@@ -82,9 +82,13 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
             "env": PT_ENV}
 
     if msg is not None and isinstance(msg, dict):
-        truncate_large_fields(msg)
-        for k, v in msg.items():
-            data[f"__{k}"] = v
+        try:
+            truncate_large_fields(msg)
+            for k, v in msg.items():
+                data[f"__{k}"] = v
+        except Exception as e:
+            ia_logging.error(f"collect_info error: {e}", exc_info=True)
+
     data_str = ''
     try:
         data_str = json.dumps(data)

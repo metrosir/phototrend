@@ -755,6 +755,9 @@ def clothes_ui():
     return G
 
 
+# app = FastAPI()
+# app.add_middleware(GZipMiddleware, minimum_size=1000, compress_level=6)
+
 with gr.Blocks(mode='interface') as G:
     with gr.Tabs():
         with gr.TabItem('商品图'):

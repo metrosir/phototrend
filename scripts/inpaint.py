@@ -41,6 +41,9 @@ import warnings
 warnings.filterwarnings("ignore", message="Some weights of the model checkpoint at metrosir/phototrend were not used when initializing ControlNetModel: ['ip_adapter', 'image_proj']")
 from typing import List
 
+import threading
+
+piplock = threading.Lock()
 
 
 # def load_im
@@ -250,11 +253,12 @@ class Inpainting:
             controlnet = []
             for contr_info in self.controlnets:
                 path = contr_info['model_path']
-                contr_info.pop('image')
-                contr_info.pop('scale')
-                contr_info.pop('model_path')
+                params = {}
+                for k, v in contr_info.items():
+                    if k not in ['model_path', 'image', 'scale']:
+                        params[k] = v
                 controlnet.append(
-                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, safety_checker=None, **contr_info)
+                    ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, safety_checker=None, **params)
                 )
             # from diffusers import AutoencoderKL
             # vae_model_path = '/data/aigc/diffusers/scripts/diffusers_model/'
@@ -360,124 +364,129 @@ class Inpainting:
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
                     open_after=None, after_params=None, res_img_info=False):
 
-        if not type(input_image) is np.ndarray:
-            if type(input_image) is str:
-                input_image = read_image_to_np(input_image)
-            if type(input_image) is Image.Image:
-                input_image = np.array(input_image)
+        try:
+            piplock.acquire()
+            if not type(input_image) is np.ndarray:
+                if type(input_image) is str:
+                    input_image = read_image_to_np(input_image)
+                if type(input_image) is Image.Image:
+                    input_image = np.array(input_image)
 
-        if not type(mask_image) is np.ndarray:
-            if type(mask_image) is str:
-                mask_image = read_image_to_np(mask_image)
-            if type(mask_image) is Image.Image:
-                mask_image = np.array(mask_image)
+            if not type(mask_image) is np.ndarray:
+                if type(mask_image) is str:
+                    mask_image = read_image_to_np(mask_image)
+                if type(mask_image) is Image.Image:
+                    mask_image = np.array(mask_image)
 
 
-        self.set_scheduler(sampler_name)
-        if platform.system() == "Darwin":
-            self.pipe = self.pipe.to("mps" if ia_check_versions.torch_mps_is_available else "cpu")
-            self.pipe.enable_attention_slicing()
-            torch_generator = torch.Generator(devices.cpu)
-        else:
-            # todo 这里需要注意，不做gc回收内存 需要使用.to("cuda")
-            # self.pipe.enable_model_cpu_offload()
-            self.pipe = self.pipe.to('cuda')
-            if shared.xformers:
-                ia_logging.info("Enable xformers memory efficient attention")
-                self.pipe.enable_xformers_memory_efficient_attention()
-            else:
-                ia_logging.info("Enable attention slicing")
+            self.set_scheduler(sampler_name)
+            if platform.system() == "Darwin":
+                self.pipe = self.pipe.to("mps" if ia_check_versions.torch_mps_is_available else "cpu")
                 self.pipe.enable_attention_slicing()
-            torch_generator = torch.Generator("cuda")
-
-        init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
-        # mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4)).convert("L").filter(ImageFilter.GaussianBlur(3))
-        # save_output_image_to_pil(mask_image, '/data1/aigc/phototrend/worker_data/inpaint_output')
-        if width is None or height is None:
-            width, height = init_image.size
-
-        output_list = []
-        seeds = []
-        iteration_count = iteration_count if iteration_count is not None else 1
-        for count in range(int(iteration_count)):
-            gc.collect()
-            if seed < 0 or count > 0:
-                seed = random.randint(0, 2147483647)
-
-            generator = torch_generator.manual_seed(seed)
-            # generator = torch.Generator(device="cpu").manual_seed(1)
-            pipe_args_dict = {
-                # "prompt": prompt,
-                "image": init_image,
-                "control_image": self.controlnet_image,
-                "controlnet_conditioning_scale": self.controlnet_scale,
-                "width": width,
-                "height": height,
-                "mask_image": mask_image,
-                "num_inference_steps": ddim_steps,
-                "guidance_scale": cfg_scale,
-                # "negative_prompt": n_prompt,
-                "generator": generator,
-                "strength": strength,
-                "eta": eta,
-            }
-            ia_logging.info(f"Pipe Args Dict:{pipe_args_dict}")
-            if self.prompt_embeds is not None:
-                pipe_args_dict['prompt_embeds'] = self.prompt_embeds
+                torch_generator = torch.Generator(devices.cpu)
             else:
-                pipe_args_dict['prompt'] = prompt
-                ia_logging.info(f"prompt:{prompt}")
-            if self.negative_prompt_embeds is not None:
-                pipe_args_dict['negative_prompt_embeds'] = self.negative_prompt_embeds
-            else:
-                pipe_args_dict['negative_prompt'] = n_prompt
-                ia_logging.info(f"negative_prompt:{n_prompt}")
-            output_image = self.pipe(**pipe_args_dict).images[0]
-
-            if composite_chk:
-                dilate_mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4))
-                output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
-            if open_after is not None and open_after:
-                if after_params is not None and after_params['base'] is not None:
-                    from .after.final import FinalProcessorBasic
-                    final = FinalProcessorBasic(after_params['base'])
-                    output_image=final.process(seed, output_image)
-
-
-            generation_params = {
-                "Steps": ddim_steps,
-                "Sampler": self.sampler_name,
-                "CFG scale": cfg_scale,
-                "Seed": seed,
-                "Size": f"{width}x{height}",
-                "Model": self.base_model,
-            }
-
-            generation_params_text = ", ".join([k if k == v else f"{k}: {v}" for k, v in generation_params.items() if v is not None])
-            prompt_text = prompt if prompt else ""
-            negative_prompt_text = "\nNegative prompt: " + n_prompt if n_prompt else ""
-            infotext = f"{prompt_text}{negative_prompt_text}\n{generation_params_text}".strip()
-            print("infotext:", infotext)
-
-            metadata = PngInfo()
-            metadata.add_text("parameters", infotext)
-
-            if output is not None:
-                # img_idx = len(os.listdir(output))
-                # save_name=os.path.join(output, f"{img_idx}.png")
-                # output_image.save(save_name, pnginfo=metadata)
-                save_output_image_to_pil(output_image, output)
-                if ret_base64:
-                    output_list.append(encode_to_base64(output_image))
+                # todo 这里需要注意，不做gc回收内存 需要使用.to("cuda")
+                # self.pipe.enable_model_cpu_offload()
+                self.pipe = self.pipe.to('cuda')
+                if shared.xformers:
+                    ia_logging.info("Enable xformers memory efficient attention")
+                    self.pipe.enable_xformers_memory_efficient_attention()
                 else:
-                    output_list.append(output_image)
-            else:
-                if ret_base64:
-                    output_list.append(encode_to_base64(output_image))
-                else:
-                    output_list.append(output_image)
-            seeds.append(seed)
-        if res_img_info:
-            return output_list, seeds
-        return output_list
+                    ia_logging.info("Enable attention slicing")
+                    self.pipe.enable_attention_slicing()
+                torch_generator = torch.Generator("cuda")
 
+            init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
+            # mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4)).convert("L").filter(ImageFilter.GaussianBlur(3))
+            # save_output_image_to_pil(mask_image, '/data1/aigc/phototrend/worker_data/inpaint_output')
+            if width is None or height is None:
+                width, height = init_image.size
+
+            output_list = []
+            seeds = []
+            iteration_count = iteration_count if iteration_count is not None else 1
+            for count in range(int(iteration_count)):
+                gc.collect()
+                if seed < 0 or count > 0:
+                    seed = random.randint(0, 2147483647)
+
+                generator = torch_generator.manual_seed(seed)
+                # generator = torch.Generator(device="cpu").manual_seed(1)
+                pipe_args_dict = {
+                    # "prompt": prompt,
+                    "image": init_image,
+                    "control_image": self.controlnet_image,
+                    "controlnet_conditioning_scale": self.controlnet_scale,
+                    "width": width,
+                    "height": height,
+                    "mask_image": mask_image,
+                    "num_inference_steps": ddim_steps,
+                    "guidance_scale": cfg_scale,
+                    # "negative_prompt": n_prompt,
+                    "generator": generator,
+                    "strength": strength,
+                    "eta": eta,
+                }
+                ia_logging.info(f"Pipe Args Dict:{pipe_args_dict}")
+                if self.prompt_embeds is not None:
+                    pipe_args_dict['prompt_embeds'] = self.prompt_embeds
+                else:
+                    pipe_args_dict['prompt'] = prompt
+                    ia_logging.info(f"prompt:{prompt}")
+                if self.negative_prompt_embeds is not None:
+                    pipe_args_dict['negative_prompt_embeds'] = self.negative_prompt_embeds
+                else:
+                    pipe_args_dict['negative_prompt'] = n_prompt
+                    ia_logging.info(f"negative_prompt:{n_prompt}")
+                output_image = self.pipe(**pipe_args_dict).images[0]
+
+                if composite_chk:
+                    dilate_mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4))
+                    output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
+                if open_after is not None and open_after:
+                    if after_params is not None and after_params['base'] is not None:
+                        from .after.final import FinalProcessorBasic
+                        final = FinalProcessorBasic(after_params['base'])
+                        output_image=final.process(seed, output_image)
+
+
+                generation_params = {
+                    "Steps": ddim_steps,
+                    "Sampler": self.sampler_name,
+                    "CFG scale": cfg_scale,
+                    "Seed": seed,
+                    "Size": f"{width}x{height}",
+                    "Model": self.base_model,
+                }
+
+                generation_params_text = ", ".join([k if k == v else f"{k}: {v}" for k, v in generation_params.items() if v is not None])
+                prompt_text = prompt if prompt else ""
+                negative_prompt_text = "\nNegative prompt: " + n_prompt if n_prompt else ""
+                infotext = f"{prompt_text}{negative_prompt_text}\n{generation_params_text}".strip()
+                print("infotext:", infotext)
+
+                metadata = PngInfo()
+                metadata.add_text("parameters", infotext)
+
+                if output is not None:
+                    # img_idx = len(os.listdir(output))
+                    # save_name=os.path.join(output, f"{img_idx}.png")
+                    # output_image.save(save_name, pnginfo=metadata)
+                    save_output_image_to_pil(output_image, output)
+                    if ret_base64:
+                        output_list.append(encode_to_base64(output_image))
+                    else:
+                        output_list.append(output_image)
+                else:
+                    if ret_base64:
+                        output_list.append(encode_to_base64(output_image))
+                    else:
+                        output_list.append(output_image)
+                seeds.append(seed)
+            if res_img_info:
+                return output_list, seeds
+            return output_list
+        except Exception as e:
+            raise e
+        finally:
+            piplock.release()

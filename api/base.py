@@ -37,7 +37,7 @@ class ApiBase(ABC):
         try:
             if request.method == "POST":
                 self.request = await request.json()
-                transfer_duration = str(round(time.time() - self.start_time, 5))
+                transfer_duration = float(round(time.time() - self.start_time, 5))
             if request.query_params.items() is not None:
                 for k, v in request.query_params.items():
                     self.query_params[k] = v
@@ -45,7 +45,7 @@ class ApiBase(ABC):
             self.params = self.params_data()
             self.data = await self.action()
 
-            self.duration = str(round(time.time() - self.start_time, 5))
+            self.duration = float(round(time.time() - self.start_time, 5))
         except Exception as e:
             self.status = 500
             self.message = "error"
