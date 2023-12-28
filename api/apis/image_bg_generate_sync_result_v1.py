@@ -19,7 +19,8 @@ class ImageBgGenerateSyncResultV1(ApiBase):
         else:
             img_list = glob.glob(datadir.api_generate_commodity_dir.format(id_task=self.params['id_task'],
                                                                            type="output", ) + f"/{int(self.params['idx'])}.png")
-
+        if len(img_list) < 1:
+            return []
         async def encode_image_to_base64(path):
             def sync_encode_image_to_base64(path):
                 with Image.open(path) as im:
