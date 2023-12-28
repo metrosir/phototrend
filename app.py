@@ -755,9 +755,6 @@ def clothes_ui():
     return G
 
 
-# app = FastAPI()
-# app.add_middleware(GZipMiddleware, minimum_size=1000, compress_level=6)
-
 with gr.Blocks(mode='interface') as G:
     with gr.Tabs():
         with gr.TabItem('商品图'):
@@ -768,10 +765,12 @@ with gr.Blocks(mode='interface') as G:
             clothes_ui()
 
 if __name__ == '__main__':
-    #  max_size=2, api_open=False, status_update_rate='auto'
-    app, local_url, share_url = G.queue(concurrency_count=64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True)
-    # enable_queue=True,
-    app.user_middleware = [x for x in app.user_middleware if x.cls.__name__ != 'CORSMiddleware']
+    from fastapi.middleware.gzip import GZipMiddleware
+    from fastapi.middleware import Middleware
+    app, local_url, share_url = G.queue(concurrency_count=64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True,
+                                                                     app_kwargs={'middleware': [
+                                                                         Middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+                                                                     ]})
     import asyncio
     Api.Api(app)
     asyncio.run(Api.call_queue_task())

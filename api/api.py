@@ -8,16 +8,11 @@ from utils.utils import project_dir
 # from scripts.piplines.controlnet_pre import lineart_image, scribble_xdog
 from api.apis import *
 from api.functions import *
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware import Middleware
 
 class Api:
     def __init__(self, app: FastAPI):
         # app = app(debug=True)
         self.app = app
-        # self.app.__init__(debug=True)
-
-        self.app.__init__(middleware=[Middleware(GZipMiddleware, minimum_size=500, compresslevel=9)])
         self.app.add_api_route("/iframe", self.read_html_file, methods=["get"], response_class=HTMLResponse)
         self.app.add_api_route("/iframe_clothes", self.read_clothes_html_file, methods=["get"],response_class=HTMLResponse)
         self.app.add_api_route("/upload_image", self.upload_image, methods=["post"])
