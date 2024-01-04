@@ -56,6 +56,7 @@ class Imageshadowss:
         finally:
             pass
 
+
 class ImagePerspectiveShadow:
 
     # 角度、水平的相对距离、阴影的相对长度、模糊半径、颜色、不透明度、插值、允许改变大小
@@ -83,6 +84,11 @@ class ImagePerspectiveShadow:
 
     async def __call__(self, img_input_path, img_output_path, ret_base64=False):
         try:
+            orientation = self.check_image_orientation(img_input_path)
+            if orientation is None:
+                raise Exception("image mode is not RGBA")
+            if orientation == 'w':
+                self.x_distance = 5
             # lock = threading.Lock()
             # lock.acquire()
             # v_angle = self.get_angle(img_input_path)
@@ -247,3 +253,25 @@ class ImagePerspectiveShadow:
 
         shadow_image.save(output)
         return shadow_image
+
+    def check_image_orientation(self, image_path):
+        '''
+        检测图像的形状：竖图、横图
+        :param image_path:
+        :return:
+        '''
+        img = Image.open(image_path)
+        if img.mode != "RGBA":
+            return None
+        img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        non_transparent = cv2.bitwise_and(img, img, mask=(img[:, :, 3] != 0).astype('uint8') * 255)
+        gray = cv2.cvtColor(non_transparent, cv2.COLOR_BGR2GRAY)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        max_contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(max_contour)
+
+        if w >= h:
+            return 'w'
+        else:
+            return 'h'
