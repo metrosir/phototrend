@@ -8,6 +8,7 @@ models_path = os.path.join(project_dir, "models")
 path_dirs = [
         (os.path.join(project_dir, 'repositories/BLIP'), 'models/blip.py', 'BLIP', []),
         (os.path.join(project_dir, 'repositories/IP-Adapter'), 'ip_adapter/ip_adapter.py', 'IP-Adapter', []),
+        (os.path.join(project_dir, 'repositories/DWPose/ControlNet-v1-1-nightly'), 'annotator/dwpose/__init__.py', 'dwpose', []),
     ]
 
 paths = {}

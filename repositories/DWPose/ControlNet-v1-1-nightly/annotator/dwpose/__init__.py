@@ -30,9 +30,9 @@ def draw_pose(pose, H, W):
 
 
 class DWposeDetector:
-    def __init__(self):
+    def __init__(self, onnx_det_model_path=None, onnx_pose_model_path=None):
 
-        self.pose_estimation = Wholebody()
+        self.pose_estimation = Wholebody(onnx_det_model_path, onnx_pose_model_path)
 
     def __call__(self, oriImg):
         oriImg = oriImg.copy()
@@ -66,3 +66,26 @@ class DWposeDetector:
             pose = dict(bodies=bodies, hands=hands, faces=faces)
 
             return draw_pose(pose, H, W)
+
+    def is_not_person_by_score(self, oriImg):
+        oriImg = oriImg.copy()
+        H, W, C = oriImg.shape
+        with torch.no_grad():
+            candidate, subset = self.pose_estimation(oriImg)
+            nums, keys, locs = candidate.shape
+            candidate[..., 0] /= float(W)
+            candidate[..., 1] /= float(H)
+            body = candidate[:, :18].copy()
+            body = body.reshape(nums * 18, locs)
+            score = subset[:, :18]
+            for i in range(len(score)):
+                for j in range(len(score[i])):
+                    if score[i][j] > 0.3:
+                        score[i][j] = int(18 * i + j)
+                    else:
+                        score[i][j] = -1
+
+            un_visible = subset < 0.3
+            candidate[un_visible] = -1
+            # 如果所有分数都低于0.3，那么就认为没有检测到人体姿态
+            return np.all(subset < 0.3)
