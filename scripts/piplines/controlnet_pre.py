@@ -128,3 +128,33 @@ def scribble_xdog(img, res=512, thr_a=32, **kwargs):
 #     result[result > 4] = 255
 #     result[result < 255] = 0
 #     return result, True
+
+def apply_canny(img, low_threshold, high_threshold):
+    return cv2.Canny(img, low_threshold, high_threshold)
+
+
+def canny(img, res=512, thr_a=100, thr_b=200, **kwargs):
+    if type(img) is str:
+        img = Image.open(BytesIO(open(img, 'rb').read())).convert("RGB")
+    l, h = thr_a, thr_b
+    img, remove_pad = resize_image_with_pad(img, res)
+    # global model_canny
+    # if model_canny is None:
+    #     model_canny = apply_canny
+    result = apply_canny(img, l, h)
+    im = remove_pad(result)
+    im = im.astype(np.uint8)
+    # im = Image.fromarray(im)
+    kernel = np.ones((2, 2), np.uint8)
+
+    # 进行膨胀操作
+    im = cv2.dilate(im, kernel, iterations=1)
+
+    # 进行腐蚀操作
+    im = cv2.erode(im, kernel, iterations=1)
+
+    im = cv2.GaussianBlur(im, (5, 5), 0)
+
+    im = Image.fromarray(im)
+    return im
+    # return remove_pad(result), True

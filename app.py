@@ -1,12 +1,10 @@
 import json
-import sys
 import gradio as gr
 import pathlib
-import uuid
 import os
 import glob
 import utils.datadir as datadir
-from utils.req import generate_image, prompt, negative_prompt, negative_prompt_clothes, sd_models, sd_vae
+from utils.req import generate_image, prompt, negative_prompt_clothes, sd_models, sd_vae
 # from utils.image import remove_bg, convert_png_to_mask
 import utils.image as image_utils
 from utils.cmd_args import opts as cmd_opts
@@ -15,11 +13,9 @@ from utils.utils import project_dir
 import scripts.templatemanager as tm
 import pandas as pd
 import datetime
-from PIL import Image
 
 import api.api as Api
 import time
-from fastapi import Request as request
 
 
 def rmbg(image, is_result=False) -> str:
@@ -682,10 +678,10 @@ def clothes_ui():
                     with gr.TabItem("上传去背后的图片(Remove background result)"):
                         with gr.Row():
                             with gr.Column():
-                                gr.Markdown('上传人物图片(Upload image)')
+                                gr.Markdown('上传换装图像')
                                 human_image = gr.Image(type='filepath', elem_id="human_image", height=300)
                             with gr.Column():
-                                gr.Markdown('上传衣服图片(Upload image)')
+                                gr.Markdown('上传衣服mask')
                                 clothes_image = gr.Image(type='filepath', elem_id="clothes_image", height=300)
                         # with gr.Row():
                             # result_rm_img_but = gr.Button('上传(Upload)')

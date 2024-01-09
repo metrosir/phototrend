@@ -20,6 +20,8 @@ class Api:
         self.app.add_api_route("/deft_scene", self.deft_scene, methods=["get"])
         self.app.add_api_route("/human_imag", self.human_imag, methods=["get"])
         self.app.add_api_route("/clothes_imag", self.clothes_imag, methods=["get"])
+        self.app.add_api_route("/read_img", self.read_img, methods=["get"], response_class=FileResponse)
+
         self.app.add_api_route("/v1/image/interrogate", self.interrogate, methods=["post"])
 
         self.app.add_api_route("/v1/commodity_image/generate", ImageBgGenerateV1().__call__, methods=["post"],
@@ -329,6 +331,12 @@ class Api:
                 return FileResponse(f"{project_dir}/worker_data/template/1000x1500.png")
             else:
                 return FileResponse(f"{project_dir}/worker_data/template/800x800.png")
+        except Exception as e:
+            return {"message": f"There was an error reading the image:{str(e)}"}
+
+    def read_img(self, path):
+        try:
+            return FileResponse(path)
         except Exception as e:
             return {"message": f"There was an error reading the image:{str(e)}"}
 
