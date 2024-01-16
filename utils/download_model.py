@@ -1,5 +1,6 @@
 
 import wget
+import os
 from utils.datadir import project_dir
 
 modes = {
@@ -10,4 +11,5 @@ modes = {
 
 def download_model():
     for url, path in modes.items():
-        wget.download(url, path)
+        if not os.path.exists(path):
+            wget.download(url, path)
