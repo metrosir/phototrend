@@ -359,7 +359,6 @@ async def async_req_base(url, heades, method='POST', **kwargs):
                         return rep
     except Exception as e:
         log_echo("async_req_base error", msg={}, is_collect=True, level="error", exception=e, path="async_req_base")
-        return False
 
     content = {}
     if rep is not None:
