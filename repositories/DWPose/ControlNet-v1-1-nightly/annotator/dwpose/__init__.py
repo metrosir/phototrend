@@ -61,13 +61,13 @@ class DWposeDetector:
 
             hands = candidate[:,92:113]
             hands = np.vstack([hands, candidate[:,113:]])
-            
+
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
 
             return draw_pose(pose, H, W)
 
-    def is_not_person_by_score(self, oriImg):
+    def is_person_by_score(self, oriImg):
         oriImg = oriImg.copy()
         H, W, C = oriImg.shape
         with torch.no_grad():
@@ -78,14 +78,57 @@ class DWposeDetector:
             body = candidate[:, :18].copy()
             body = body.reshape(nums * 18, locs)
             score = subset[:, :18]
+
+            f_cnt = 0
             for i in range(len(score)):
                 for j in range(len(score[i])):
-                    if score[i][j] > 0.3:
+                    if score[i][j] > 0.45:
                         score[i][j] = int(18 * i + j)
                     else:
                         score[i][j] = -1
+                        f_cnt += 1
+
+            # 0-近、1-中、2-远
+            distance_enum = None
+            if f_cnt >= 9:
+                return False, distance_enum
+
+            distance_tags = {
+                "near": [{8, 11, 16, 17}, {8, 11, 16}, {8, 11, 17}],
+                "mid": [{9, 12, 16, 17}, {9, 12, 16}, {9, 12, 17}],
+                "far": [{10, 13, 16, 17}, {10, 13, 16}, {10, 13, 17}],
+            }
+            # distance_near = {8, 11, 16, 17}
+
+            pose_scores = []
+
+            for i in range(len(score)):
+                for j in range(len(score[i])):
+                    pose_scores.append(score[i][j])
+
+            if distance_tags['far'][0].issubset(pose_scores) or distance_tags['far'][1].issubset(pose_scores) or distance_tags['far'][2].issubset(pose_scores):
+                distance_enum = 2
+            elif distance_tags['mid'][0].issubset(pose_scores) or distance_tags['mid'][1].issubset(pose_scores) or distance_tags['mid'][2].issubset(pose_scores):
+                distance_enum = 1
+            elif distance_tags['near'][0].issubset(pose_scores) or distance_tags['near'][1].issubset(pose_scores) or distance_tags['near'][2].issubset(pose_scores):
+                distance_enum = 0
+            # distance_tags['mid'].issubset(pose_scores)
+            # distance_tags['near'].issubset(pose_scores)
+
+            # for arr in distance_tags['far']:
+            #     if arr in pose_scores:
+            #         distance_enum = 2
+            #         break
+            # if distance_tags['far'] in pose_scores:
+            #     distance_enum = 2
+            # elif distance_tags['mid'] in pose_scores:
+            #     distance_enum = 1
+            # elif distance_tags['near'] in pose_scores:
+            #     distance_enum = 0
+
+
+            return True, distance_enum
 
             un_visible = subset < 0.3
             candidate[un_visible] = -1
-            # 如果所有分数都低于0.3，那么就认为没有检测到人体姿态
-            return np.all(subset < 0.3)
+            return not np.all(subset < 0.3)

@@ -31,8 +31,8 @@ import numpy as np
 import torch
 from utils.pt_logging import ia_logging
 from diffusers import (DDIMScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler,UniPCMultistepScheduler,
-                       KDPM2AncestralDiscreteScheduler, KDPM2DiscreteScheduler,
-                       StableDiffusionInpaintPipeline, StableDiffusionControlNetInpaintPipeline, ControlNetModel)
+                       KDPM2AncestralDiscreteScheduler, KDPM2DiscreteScheduler, AutoencoderKL,
+                       StableDiffusionInpaintPipeline, StableDiffusionControlNetInpaintPipeline, ControlNetModel, StableDiffusionXLControlNetImg2ImgPipeline, StableDiffusionXLControlNetInpaintPipeline)
 from diffusers.pipelines.controlnet import MultiControlNetModel
 
 from transformers import logging as transformers_logging
@@ -260,6 +260,7 @@ class Inpainting:
                 controlnet.append(
                     ControlNetModel.from_pretrained(path, torch_dtype=self.torch_dtype, safety_checker=None, **params)
                 )
+            # controlnet = ControlNetModel.from_single_file("/data/aigc/stable-diffusion-webui/extensions/sd-webui-controlnet/models/control_v11p_sd15_openpose.pth")
             # from diffusers import AutoencoderKL
             # vae_model_path = '/data/aigc/diffusers/scripts/diffusers_model/'
             # vae = AutoencoderKL.from_pretrained(vae_model_path).to(dtype=torch.float16)
@@ -272,18 +273,35 @@ class Inpainting:
             #     set_alpha_to_one=False,
             #     steps_offset=1,
             # )
+            # model_path = '../../models/ckpt/diffusers/epicphotogasm_lastUnicorn'
+            # model_path = '/data1/aigc/models/ckpt/diffusers/epicphotogasm_lastUnicorn'
+            # print(controlnet)
+            # from diffusers import ControlNetModel
+            # from diffusers import MultiControlNetModel
+
+            # print("type:", type(controlnet))
+            # print(isinstance(controlnet, (ControlNetModel, MultiControlNetModel))
+            #     , isinstance(controlnet, (list, tuple))
+            #     , isinstance(controlnet[0], ControlNetModel))
+
+            # self.pipe = StableDiffusionControlNetInpaintPipeline.from_single_file(
+
+            # url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/blob/main/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
+            # url = "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
+            # vae_model = AutoencoderKL.from_single_file(url, torch_dtype=self.torch_dtype)
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
-            # self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
                 self.base_model,
                 # vae=vae,
                 torch_dtype=self.torch_dtype,
-                local_files_only=self.local_files_only,
+                # local_files_only=self.local_files_only,
+                safety_checker=None,
+                requires_safety_checker=False,
                 controlnet=controlnet,
                 # scheduler=noise_scheduler,
                 # subfolder=self.base_model_sub,
             )
         except Exception as e:
-            ia_logging.error(str(e))
+            ia_logging.error(str(e), exc_info=True)
             raise ValueError(str(e))
         return self.pipe
 
@@ -358,11 +376,35 @@ class Inpainting:
             self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
         # self.pipe = ip_model.pipe
 
+    def load_lora_weights(self, model_id, scale=0.75):
+        from safetensors.torch import load_file
+        if model_id.endswith(".safetensors"):
+            lora_state_dict = load_file(model_id, device=self.device)
+        else:
+            lora_state_dict = torch.load(model_id, map_location=self.device)
+        lora_weight_state_dict = {}
+        for key in lora_state_dict:
+            lora_weight_state_dict[key] = lora_state_dict[key] * scale
+        self.pipe.load_lora_weights(lora_weight_state_dict)
+
+    def load_textual_inversion(self, model_id, token, weight_name):
+        from utils.utils import project_dir
+        print(f"load_textual_inversion:")
+        self.pipe.load_textual_inversion(
+            pretrained_model_name_or_path=model_id,
+            # token=token,
+            # weight_name=weight_name,
+            # torch_dtype=self.torch_dtype
+        )
+
+    def load_vae(self):
+        self.pipe.vae = AutoencoderKL.from_single_file("/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors", torch_dtype=self.torch_dtype).to(self.device)
+
     def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
-                    open_after=None, after_params=None, res_img_info=False):
+                    open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None):
 
         try:
             piplock.acquire()
@@ -426,6 +468,8 @@ class Inpainting:
                     "generator": generator,
                     "strength": strength,
                     "eta": eta,
+                    "guess_mode": True,
+                    # "control_guidance_start"
                 }
                 ia_logging.info(f"Pipe Args Dict:{pipe_args_dict}")
                 if self.prompt_embeds is not None:
@@ -438,6 +482,13 @@ class Inpainting:
                 else:
                     pipe_args_dict['negative_prompt'] = n_prompt
                     ia_logging.info(f"negative_prompt:{n_prompt}")
+
+                if use_ip_adapter and ipadapter_img is not None:
+                    #TODO: 这里需要注意，如果使用ip_adapter，需要将ip_adapter的参数传入
+                    self.pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter-plus_sd15.bin")
+                    self.pipe.set_ip_adapter_scale(0.6)
+                    pipe_args_dict.update({"ip_adapter_image": ipadapter_img})
+
                 output_image = self.pipe(**pipe_args_dict).images[0]
 
                 if composite_chk:

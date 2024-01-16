@@ -32,11 +32,21 @@ def handle_autosort_checkbox_change(data: pd.DataFrame, filename) -> pd.DataFram
     fm.save_current_styles(styles, filename)
     return data
 
-data = pd.DataFrame(data=[
-    ['模板3', 'http://1', '1,2,3,4,5', '分类1,', '参数1.', '评分：1', '备注111', datetime.datetime.now(
-                tz=datetime.timezone(datetime.timedelta(hours=8))
-            ).strftime("%Y-%m-%d %H:%M:%S")],
-], columns=columns)
-handle_autosort_checkbox_change(data, '123')
+# data = pd.DataFrame(data=[
+#     ['模板3', 'http://1', '1,2,3,4,5', '分类1,', '参数1.', '评分：1', '备注111', datetime.datetime.now(
+#                 tz=datetime.timezone(datetime.timedelta(hours=8))
+#             ).strftime("%Y-%m-%d %H:%M:%S")],
+# ], columns=columns)
+# handle_autosort_checkbox_change(data, '123')
 
 
+# from utils.image import image_to_base64
+# print(image_to_base64('/tmp/gradio/22a64fb4a7b055c14704aabef9ae89dccdd54f0c/6.png', False))
+
+
+try:
+    raise Exception('123')
+except Exception as e:
+    raise e
+finally:
+    print(1111)

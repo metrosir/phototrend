@@ -169,3 +169,8 @@ if PT_ENV == PT_PROD:
 
 # 1.1.1.1,2.2.2.2
 hosts = os.getenv("PT_BACK_HOSTS")
+catout_apiket = os.getenv("CUTOUT_API_KEY")
+sam_host = os.getenv("SAM_HOST")
+rembg_api = os.getenv("REMBG_API")
+aws_access_key_id = os.getenv("aws_access_key_id")
+aws_secret_access_key = os.getenv("aws_secret_access_key")

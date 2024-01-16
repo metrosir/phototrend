@@ -292,10 +292,10 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
 
 import asyncio
 import aiohttp
+from .pt_logging import log_echo
 
 
 async def back_host_generate(host, req, output_dir):
-    from .pt_logging import log_echo
     # if len(host_list) < 1:
     #     return False
 
@@ -328,3 +328,51 @@ async def async_back_host_generate(host_list, req, output_dir):
 
     results = await asyncio.gather(*tasks)
     return all(results)
+
+
+async def async_req_base(url, heades, method='POST', **kwargs):
+    try:
+        log_echo("async_req_base", msg={
+            "req": {
+                "url": url,
+                "heades": heades,
+                "method": method,
+                # "kwargs": kwargs,
+            },
+        }, is_collect=False, level="info", path="async_req_base")
+        rep = None
+        async with aiohttp.ClientSession() as session:
+            if method == 'GET':
+                async with session.get(url, headers=heades, **kwargs) as response:
+                    if response.status == 200:
+                        rep = await response.text()
+                        return rep
+            else:
+                async with session.post(url, headers=heades, **kwargs) as response:
+                    if response.status == 200:
+                        if response.headers['Content-Type'] == 'application/json':
+                            rep = await response.json()
+                        elif response.headers['Content-Type'] == 'text/html':
+                            rep = await response.text()
+                        elif response.headers['Content-Type'].find('image') != -1:
+                            rep = await response.read()
+                        return rep
+    except Exception as e:
+        log_echo("async_req_base error", msg={}, is_collect=True, level="error", exception=e, path="async_req_base")
+        return False
+
+    content = {}
+    if rep is not None:
+        content = rep
+    log_echo("async_req_base error", msg={
+        "req": {
+            "url": url,
+            "heades": heades,
+            "method": method,
+            # "kwargs": kwargs,
+        },
+        "response_heads": response.headers,
+        "response_content": str(content),
+    }, is_collect=True, level="error", path="async_req_base")
+
+    return False

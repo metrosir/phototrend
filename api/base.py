@@ -36,7 +36,13 @@ class ApiBase(ABC):
         transfer_duration = 0
         try:
             if request.method == "POST":
-                self.request = await request.json()
+                # 判断是否为文件上传
+                if not request.headers['content-type'].startswith('multipart/form-data'):
+                #     self.request = await request.body()
+                # else:
+                    self.request = await request.json()
+                else:
+                    self.request = request
                 transfer_duration = float(round(time.time() - self.start_time, 5))
             if request.query_params.items() is not None:
                 for k, v in request.query_params.items():
@@ -47,7 +53,7 @@ class ApiBase(ABC):
 
             self.duration = float(round(time.time() - self.start_time, 5))
         except Exception as e:
-            self.status = 500
+            self.status = 400
             self.message = "error"
             log_echo(title="api error", exception=e, msg={
                 "api": request.url.path,

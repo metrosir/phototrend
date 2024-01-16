@@ -3,7 +3,7 @@ import cv2
 import os
 from PIL import Image, PngImagePlugin
 import base64
-from rembg import remove
+# from rembg import remove
 from utils.pt_logging import ia_logging
 from torchvision import transforms
 import numpy as np

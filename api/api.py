@@ -32,6 +32,8 @@ class Api:
                                response_class=JSONResponse)
         self.app.add_api_route("/v1/image/shadow", ImageShadowV1().__call__, methods=["post"],
                                response_class=JSONResponse)
+        self.app.add_api_route("/v1/dress_sam", DressSam().__call__, methods=["post"],
+                               response_class=JSONResponse)
 
         # self.queue = Queue(api_queue_dir)
 

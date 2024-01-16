@@ -16,9 +16,9 @@ uuid = generate_uuid()
 history = f"{project_dir}/worker_data/history"
 
 # 服装商品图
-clothes_history = f"{project_dir}/worker_data/clothes_history"
+dress_history = f"{project_dir}/worker_data/history/dress"
 pathlib.Path(history).mkdir(parents=True, exist_ok=True)
-pathlib.Path(clothes_history).mkdir(parents=True, exist_ok=True)
+pathlib.Path(dress_history).mkdir(parents=True, exist_ok=True)
 
 # 默认场景图:需要初始化
 deft_scene_image = f'{history}/def_scene_image/'
@@ -48,14 +48,14 @@ generate_self_innovate_image_dir = history + '/{uuid}/generate_self_innovate_ima
 generate_self_innovate_glob_img = history + '/*/generate_self_innovate_image/*/*.png'
 
 
-
-clothes_merge_scene_dir = clothes_history + '/{uuid}/clothes_merge_scene_image'.format(uuid=uuid)
-clothes_dir = clothes_history + '/{uuid}/clothes_image'.format(uuid=uuid)
-clothes_mask_dir = clothes_history + '/{uuid}/clothes_mask_image'.format(uuid=uuid)
-clothes_mask_cut_dir = clothes_history + '/{uuid}/clothes_mask_cut_image'.format(uuid=uuid)
-
-clothes_generate_image_dir = clothes_history + '/{uuid}/clothes_generate_image/{idx}'
-clothes_generate_glob_img = clothes_history + '/*/clothes_generate_image/*/*.png'
+dress_worker_history = dress_history + "/{worker_id}"
+# clothes_merge_scene_dir = clothes_history + '/{uuid}/clothes_merge_scene_image'.format(uuid=uuid)
+# clothes_dir = clothes_history + '/{uuid}/clothes_image'.format(uuid=uuid)
+# clothes_mask_dir = clothes_history + '/{uuid}/clothes_mask_image'.format(uuid=uuid)
+# clothes_mask_cut_dir = clothes_history + '/{uuid}/clothes_mask_cut_image'.format(uuid=uuid)
+#
+# clothes_generate_image_dir = clothes_history + '/{uuid}/clothes_generate_image/{idx}'
+# clothes_generate_glob_img = clothes_history + '/*/clothes_generate_image/*/*.png'
 
 
 # api 输入图片和输出图片

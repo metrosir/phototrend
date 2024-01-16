@@ -84,8 +84,13 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
     if msg is not None and isinstance(msg, dict):
         try:
             truncate_large_fields(msg)
+            from starlette.datastructures import FormData
+            from starlette.requests import Request
             for k, v in msg.items():
-                data[f"__{k}"] = v
+                if not isinstance(v, FormData) and not isinstance(v, Request):
+                    data[f"__{k}"] = v
+                else:
+                    data[f"__{k}"] = "FormData(...) | Request(...)"
         except Exception as e:
             ia_logging.error(f"collect_info error: {e}", exc_info=True)
 
