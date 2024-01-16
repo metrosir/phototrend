@@ -370,7 +370,7 @@ async def async_req_base(url, heades, method='POST', **kwargs):
             "method": method,
             # "kwargs": kwargs,
         },
-        "response_heads": response.headers,
+        "response_heads": response.headers if response is not None else None,
         "response_content": str(content),
     }, is_collect=True, level="error", path="async_req_base")
 
