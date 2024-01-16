@@ -20,8 +20,8 @@ inflection==0.5.1
 python_json_logger
 fairscale==0.4.4
 loguru==0.7.2
-pip boto3
-pip wget
+boto3
+wget
 git+https://github.com/openai/CLIP.git
 #pip install git+https://github.com/openai/CLIP.git
 #pip install ftfy regex tqdm
