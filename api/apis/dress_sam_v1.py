@@ -16,10 +16,7 @@ from scripts.dress.rembg import Rembg
 class DressSam(ApiBase):
 
         def params_data(self):
-            return {
-                "id_task": self.request.get("id_task", datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y%m%d%H%M%S") + uuid.uuid4().hex[:4]),
-                "uid": self.request.get("uid", uuid.uuid4().hex[:8]),
-            }
+            return {}
 
         async def action(self):
             res = {
@@ -30,9 +27,11 @@ class DressSam(ApiBase):
             }
             form_data = await self.request.form()
             file = form_data['file']
+            self.params['uid'] = form_data['uid']
+            self.params['id_task'] = form_data['id_task']
+
             content = await file.read()
-            id_task = self.params['id_task']
-            dir = datadir.dress_worker_history.format(worker_id=id_task)
+            dir = datadir.dress_worker_history.format(worker_id=self.params['id_task'])
             dir = os.path.join(dir, 'input')
             if not os.path.exists(dir):
                 pathlib.Path.mkdir(pathlib.Path(dir), parents=True, exist_ok=True)
