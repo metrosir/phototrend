@@ -761,8 +761,11 @@ with gr.Blocks(mode='interface') as G:
             clothes_ui()
 
 if __name__ == '__main__':
+    from utils.download_model import download_model
     from fastapi.middleware.gzip import GZipMiddleware
     from fastapi.middleware import Middleware
+    download_model()
+
     app, local_url, share_url = G.queue(concurrency_count=64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True,
                                                                      app_kwargs={'middleware': [
                                                                          Middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
