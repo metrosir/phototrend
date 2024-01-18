@@ -32,7 +32,9 @@ class Api:
                                response_class=JSONResponse)
         self.app.add_api_route("/v1/image/shadow", ImageShadowV1().__call__, methods=["post"],
                                response_class=JSONResponse)
-        self.app.add_api_route("/v1/dress_sam", DressSam().__call__, methods=["post"],
+        self.app.add_api_route("/v1/dress_sam", DressSamV1().__call__, methods=["post"],
+                               response_class=JSONResponse)
+        self.app.add_api_route("/v1/dress", DressRunV1().__call__, methods=["post"],
                                response_class=JSONResponse)
 
         # self.queue = Queue(api_queue_dir)
@@ -162,7 +164,7 @@ class Api:
         )
         ret = []
         try:
-            input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
+            type_enum, input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale \
                 = commodity_image_generate_api_params(data.get('data'))
 
             input_image = decode_base64_to_image(input_image)

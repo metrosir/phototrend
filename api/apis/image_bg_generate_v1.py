@@ -15,7 +15,7 @@ class ImageBgGenerateV1(ApiBase):
             images=[data['data']['input_images'][0], data['data']['mask_image']]
         )
 
-        input_image, \
+        type_enum, input_image, \
             mask, base_model, pos_prompt, \
             neg_prompt, batch_count, sampler_name, contr_inp_weight, \
             contr_ipa_weight, contr_lin_weight, width, height, \

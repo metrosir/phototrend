@@ -238,7 +238,7 @@ class Inpainting:
         else:
             self.torch_dtype = torch.float16
         self.pipe = self.setup()
-        self.set_textual_inversion(**textual_inversion)
+        # self.set_textual_inversion(**textual_inversion)
 
         self.pipe.safety_checker = None
         self.sampler_name = None
@@ -289,9 +289,13 @@ class Inpainting:
             # url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/blob/main/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
             # url = "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
             # vae_model = AutoencoderKL.from_single_file(url, torch_dtype=self.torch_dtype)
+            vae = AutoencoderKL.from_single_file(
+                "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors",
+                torch_dtype=self.torch_dtype)
+
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
-                # vae=vae,
+                vae=vae,
                 torch_dtype=self.torch_dtype,
                 # local_files_only=self.local_files_only,
                 safety_checker=None,
@@ -304,8 +308,6 @@ class Inpainting:
             ia_logging.error(str(e), exc_info=True)
             raise ValueError(str(e))
         return self.pipe
-
-
 
     def set_textual_inversion(self, model_id, token, weight_name, subfolder=None):
         from .piplines.textual_inversion import load
@@ -387,24 +389,20 @@ class Inpainting:
             lora_weight_state_dict[key] = lora_state_dict[key] * scale
         self.pipe.load_lora_weights(lora_weight_state_dict)
 
-    def load_textual_inversion(self, model_id, token, weight_name):
-        from utils.utils import project_dir
-        print(f"load_textual_inversion:")
+    def load_textual_inversion(self, model_id):
         self.pipe.load_textual_inversion(
             pretrained_model_name_or_path=model_id,
-            # token=token,
-            # weight_name=weight_name,
-            # torch_dtype=self.torch_dtype
         )
 
     def load_vae(self):
-        self.pipe.vae = AutoencoderKL.from_single_file("/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors", torch_dtype=self.torch_dtype).to(self.device)
+        pass
+        # self.pipe.vae = AutoencoderKL.from_single_file("/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors", torch_dtype=self.torch_dtype).to(self.device)
 
     def run_inpaint(self,
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
-                    open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None):
+                    open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None, ip_adapter_scale = 0.45):
 
         try:
             piplock.acquire()
@@ -449,6 +447,7 @@ class Inpainting:
             iteration_count = iteration_count if iteration_count is not None else 1
             for count in range(int(iteration_count)):
                 gc.collect()
+                # if seed < 0:
                 if seed < 0 or count > 0:
                     seed = random.randint(0, 2147483647)
 
@@ -486,7 +485,7 @@ class Inpainting:
                 if use_ip_adapter and ipadapter_img is not None:
                     #TODO: 这里需要注意，如果使用ip_adapter，需要将ip_adapter的参数传入
                     self.pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter-plus_sd15.bin")
-                    self.pipe.set_ip_adapter_scale(0.6)
+                    self.pipe.set_ip_adapter_scale(ip_adapter_scale)
                     pipe_args_dict.update({"ip_adapter_image": ipadapter_img})
 
                 output_image = self.pipe(**pipe_args_dict).images[0]

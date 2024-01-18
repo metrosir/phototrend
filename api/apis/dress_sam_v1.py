@@ -13,7 +13,7 @@ from scripts.dress.pose import Pose
 from scripts.dress.rembg import Rembg
 
 
-class DressSam(ApiBase):
+class DressSamV1(ApiBase):
 
         def params_data(self):
             return {}
@@ -31,7 +31,7 @@ class DressSam(ApiBase):
             self.params['id_task'] = form_data['id_task']
 
             content = await file.read()
-            dir = datadir.dress_worker_history.format(worker_id=self.params['id_task'])
+            dir = datadir.dress_worker_input_history.format(worker_id=self.params['id_task'])
             dir = os.path.join(dir, 'input')
             if not os.path.exists(dir):
                 pathlib.Path.mkdir(pathlib.Path(dir), parents=True, exist_ok=True)

@@ -95,6 +95,17 @@ init_model = {
     }
 }
 
+contr_module_map_path = {
+    'lineart_realistic': {
+        'model_path': 'lllyasviel/control_v11p_sd15_lineart',
+        'subfolder': None,
+    },
+    'openpose_hand': {
+        'model_path': 'lllyasviel/control_v11p_sd15_openpose',
+        'subfolder': None,
+    },
+}
+
 shadow = {
     "plane": {
         "left": {
