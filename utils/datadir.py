@@ -48,7 +48,7 @@ generate_self_innovate_image_dir = history + '/{uuid}/generate_self_innovate_ima
 generate_self_innovate_glob_img = history + '/*/generate_self_innovate_image/*/*.png'
 
 
-dress_worker_history = dress_history + "/{worker_id}"
+dress_worker_history = dress_history + "/{worker_id}/{type}"
 dress_worker_input_history = dress_history + "/{worker_id}/input"
 dress_worker_output_history = dress_history + "/{worker_id}/output"
 # clothes_merge_scene_dir = clothes_history + '/{uuid}/clothes_merge_scene_image'.format(uuid=uuid)

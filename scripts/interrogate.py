@@ -77,6 +77,7 @@ class InterrogateModels:
         self.skip_categories = []
         self.content_dir = os.path.join(models_path, 'interrogate')
         self.running_on_cpu = False
+        self.load()
 
     def categories(self):
         return []
@@ -148,12 +149,12 @@ class InterrogateModels:
     def send_clip_to_ram(self):
         if not interrogate_keep_models_in_memory:
             if self.clip_model is not None:
-                self.clip_model = self.clip_model.to(torch.device("cpu"))
+                self.clip_model = self.clip_model.to(torch.device("cuda"))
 
     def send_blip_to_ram(self):
         if not interrogate_keep_models_in_memory:
             if self.blip_model is not None:
-                self.blip_model = self.blip_model.to(torch.device("cpu"))
+                self.blip_model = self.blip_model.to(torch.device("cuda"))
 
     def unload(self):
         self.send_clip_to_ram()
@@ -197,7 +198,6 @@ class InterrogateModels:
 
     def interrogate(self, pil_image):
         res = ""
-        self.load()
 
         caption = self.generate_caption(pil_image)
         self.send_blip_to_ram()

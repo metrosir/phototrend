@@ -104,6 +104,10 @@ contr_module_map_path = {
         'model_path': 'lllyasviel/control_v11p_sd15_openpose',
         'subfolder': None,
     },
+    'scribble_xdog': {
+        'model_path': 'metrosir/phototrend',
+        'subfolder': 'controlnets/control_v11p_sd15_scribble',
+    }
 }
 
 shadow = {

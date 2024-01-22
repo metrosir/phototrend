@@ -16,9 +16,10 @@ class DressPipe(Base):
         return {}
 
     async def action(self):
-        input_image = cv2.imread(self.params['input_image'])
-        self.params['prompt'] = self.params['prompt'] % self.interrogate.interrogate(
-            Image.fromarray(cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB))) if '%s' in self.params['prompt'] else self.params['prompt']
+        input_image = cv2.imread(self.loca_img_path['input_image'])
+        print("self.loca_img_path['input_image']:", self.loca_img_path['input_image'])
+        self.params['prompt'] = \
+            self.params['prompt'] % self.interrogate.interrogate(Image.fromarray(cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB))) if '%s' in self.params['prompt'] else self.params['prompt']
 
         self.pipe.load_textual_inversion(
             [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
@@ -26,8 +27,8 @@ class DressPipe(Base):
         )
         self.pipe.set_controlnet_input(self.controlnet_sets)
         self.pipe.run_inpaint(
-            input_image=self.params['input_image'],
-            mask_image=self.params['mask_image'],
+            input_image=self.loca_img_path['input_image'],
+            mask_image=self.loca_img_path['mask_image'],
             prompt=self.params['prompt'],
             n_prompt=self.params['negative_prompt'],
             ddim_steps=self.params['steps'],
@@ -44,8 +45,10 @@ class DressPipe(Base):
             open_after=None,
             after_params=None,
             res_img_info=True,
-            use_ip_adapter=True,
+            use_ip_adapter=self.params['reference'],
+            # ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB') if self.params['reference'] else None,
             ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB'),
+            ip_adapter_scale=self.params['reference_scale'],
         )
         controlnet_set_data = []
         # for contl in self.params['controlnets']:

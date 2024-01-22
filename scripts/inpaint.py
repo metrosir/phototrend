@@ -219,7 +219,7 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
 
         return output_list, max([1, iteration_count - (count + 1)])
 
-gpipe=None
+G_PIPE=None
 
 
 class Inpainting:
@@ -240,10 +240,13 @@ class Inpainting:
         self.pipe = self.setup()
         # self.set_textual_inversion(**textual_inversion)
 
+        self.textual_inversions = []
         self.pipe.safety_checker = None
         self.sampler_name = None
         self.ipadpter_model = None
         self.device='cuda'
+
+        self.load_ip_adapter_weight = False
 
         self.prompt_embeds=None
         self.negative_prompt_embeds=None
@@ -345,37 +348,37 @@ class Inpainting:
             self.pipe.scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
         return self.pipe
 
-    def set_ip_adapter(self, image_encoder_path, ip_ckpt, device='cuda', num_tokens=16):
-        import ip_adapter.ip_adapter
-        self.ipadpter_model = ip_adapter.ip_adapter.IPAdapterPlus(self.pipe, image_encoder_path, ip_ckpt, device, num_tokens=num_tokens)
+    # def set_ip_adapter(self, image_encoder_path, ip_ckpt, device='cuda', num_tokens=16):
+    #     import ip_adapter.ip_adapter
+    #     self.ipadpter_model = ip_adapter.ip_adapter.IPAdapterPlus(self.pipe, image_encoder_path, ip_ckpt, device, num_tokens=num_tokens)
 
 
-    def input_ip_adapter_condition(self, pil_image, prompt, negative_prompt,clip_image_embeds=None, num_samples=4, scale=1.0):
-        self.ipadpter_model.set_scale(scale)
-        num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
-        if not isinstance(prompt, List):
-            prompt = [prompt] * num_prompts
-        if not isinstance(negative_prompt, List):
-            negative_prompt = [negative_prompt] * num_prompts
-        image_prompt_embeds, uncond_image_prompt_embeds = self.ipadpter_model.get_image_embeds(
-            pil_image=pil_image, clip_image_embeds=clip_image_embeds
-        )
-
-        bs_embed, seq_len, _ = image_prompt_embeds.shape
-        image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
-        image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
-        uncond_image_prompt_embeds = uncond_image_prompt_embeds.repeat(1, num_samples, 1)
-        uncond_image_prompt_embeds = uncond_image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
-        with torch.inference_mode():
-            prompt_embeds_, negative_prompt_embeds_ = self.pipe.encode_prompt(
-                prompt,
-                device=self.device,
-                num_images_per_prompt=num_samples,
-                do_classifier_free_guidance=True,
-                negative_prompt=negative_prompt,
-            )
-            self.prompt_embeds = torch.cat([prompt_embeds_, image_prompt_embeds], dim=1)
-            self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
+    # def input_ip_adapter_condition(self, pil_image, prompt, negative_prompt,clip_image_embeds=None, num_samples=4, scale=1.0):
+    #     self.ipadpter_model.set_scale(scale)
+    #     num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
+    #     if not isinstance(prompt, List):
+    #         prompt = [prompt] * num_prompts
+    #     if not isinstance(negative_prompt, List):
+    #         negative_prompt = [negative_prompt] * num_prompts
+    #     image_prompt_embeds, uncond_image_prompt_embeds = self.ipadpter_model.get_image_embeds(
+    #         pil_image=pil_image, clip_image_embeds=clip_image_embeds
+    #     )
+    #
+    #     bs_embed, seq_len, _ = image_prompt_embeds.shape
+    #     image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
+    #     image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
+    #     uncond_image_prompt_embeds = uncond_image_prompt_embeds.repeat(1, num_samples, 1)
+    #     uncond_image_prompt_embeds = uncond_image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
+    #     with torch.inference_mode():
+    #         prompt_embeds_, negative_prompt_embeds_ = self.pipe.encode_prompt(
+    #             prompt,
+    #             device=self.device,
+    #             num_images_per_prompt=num_samples,
+    #             do_classifier_free_guidance=True,
+    #             negative_prompt=negative_prompt,
+    #         )
+    #         self.prompt_embeds = torch.cat([prompt_embeds_, image_prompt_embeds], dim=1)
+    #         self.negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
         # self.pipe = ip_model.pipe
 
     def load_lora_weights(self, model_id, scale=0.75):
@@ -390,9 +393,27 @@ class Inpainting:
         self.pipe.load_lora_weights(lora_weight_state_dict)
 
     def load_textual_inversion(self, model_id):
-        self.pipe.load_textual_inversion(
-            pretrained_model_name_or_path=model_id,
-        )
+        if len(self.textual_inversions) < 1:
+            self.pipe.load_textual_inversion(
+                pretrained_model_name_or_path=model_id,
+            )
+            if isinstance(model_id, list):
+                self.textual_inversions.extend(model_id)
+            if isinstance(model_id, str):
+                self.textual_inversions.append(model_id)
+        else:
+            if isinstance(model_id, str) and model_id not in self.textual_inversions:
+                self.pipe.load_textual_inversion(
+                    pretrained_model_name_or_path=model_id,
+                )
+                self.textual_inversions.append(model_id)
+            elif isinstance(model_id, list):
+                for mod in model_id:
+                    if mod not in self.textual_inversions:
+                        self.pipe.load_textual_inversion(
+                            pretrained_model_name_or_path=model_id,
+                        )
+                        self.textual_inversions.append(mod)
 
     def load_vae(self):
         pass
@@ -445,6 +466,18 @@ class Inpainting:
             output_list = []
             seeds = []
             iteration_count = iteration_count if iteration_count is not None else 1
+            print("use_ip_adapter:", use_ip_adapter)
+            print("ipadapter_img:", ipadapter_img)
+            if use_ip_adapter and ipadapter_img is not None:
+                # TODO: 这里需要注意，如果使用ip_adapter，需要将ip_adapter的参数传入
+                self.pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter-plus_sd15.bin")
+                self.pipe.set_ip_adapter_scale(ip_adapter_scale)
+                self.load_ip_adapter_weight = True
+            else:
+                if self.load_ip_adapter_weight:
+                    self.load_ip_adapter_weight = False
+                    self.pipe.unload_ip_adapter()
+
             for count in range(int(iteration_count)):
                 gc.collect()
                 # if seed < 0:
@@ -482,10 +515,8 @@ class Inpainting:
                     pipe_args_dict['negative_prompt'] = n_prompt
                     ia_logging.info(f"negative_prompt:{n_prompt}")
 
-                if use_ip_adapter and ipadapter_img is not None:
-                    #TODO: 这里需要注意，如果使用ip_adapter，需要将ip_adapter的参数传入
-                    self.pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter-plus_sd15.bin")
-                    self.pipe.set_ip_adapter_scale(ip_adapter_scale)
+                # pipe_args_dict.update({"ip_adapter_image": ipadapter_img})
+                if self.load_ip_adapter_weight:
                     pipe_args_dict.update({"ip_adapter_image": ipadapter_img})
 
                 output_image = self.pipe(**pipe_args_dict).images[0]

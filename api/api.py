@@ -172,10 +172,10 @@ class Api:
 
             pos_prompt = pos_prompt % interrogate.interrogate(input_image) if '%s' in pos_prompt else pos_prompt
 
-            if gpipe is None:
+            if G_PIPE is None:
                 pipe = set_model()
             else:
-                pipe = gpipe
+                pipe = G_PIPE
 
             lineart_input_img = lineart_image(input_image=input_image, width=width)
             # lineart_mask_img = lineart_image(input_image=mask, width=width)

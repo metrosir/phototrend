@@ -1,6 +1,8 @@
 from api.base import ApiBase
 from api.functions import *
 
+from api.pipe_tasks.base import InputWorkerData, RunWorker, CommodityPipe
+
 
 class ImageBgGenerateV1(ApiBase):
 
@@ -8,6 +10,10 @@ class ImageBgGenerateV1(ApiBase):
         return self.params
 
     async def action(self):
+
+        pipe = CommodityPipe(self.request, G_PIPE, interrogate, task_sync=False)
+        return await pipe()
+
         data = self.request
         saveimage(
             id_task=data['id_task'],

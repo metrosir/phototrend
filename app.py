@@ -114,8 +114,8 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
                 # np 格式图像存储
                 image.save(f'{controlnet_images_dir}/{len(file_list)+images_idx}.png')
 
-        if Api.gpipe is None:
-            Api.gpipe = Api.set_model()
+        if Api.G_PIPE is None:
+            Api.G_PIPE = Api.set_model()
 
         from PIL import Image
 
@@ -124,7 +124,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         lineart_img = lineart_image(input_image=comm_merge_scene_im, width=width)
         scribble_img = scribble_xdog(img=mask_im, res=width)
         save_image([lineart_img, scribble_img])
-        Api.gpipe.set_controlnet_input(
+        Api.G_PIPE.set_controlnet_input(
             [
                 # {
                 #     'scale': contr_ipa_weight,
@@ -151,7 +151,7 @@ def generate(mode, select_model, select_vae, pos_prompt, neg_prompt, batch_count
         #                                 negative_prompt=neg_prompt, scale=contr_ipa_weight)
 
         print("int(seed):", int(seed))
-        res, seeds = Api.gpipe.run_inpaint(
+        res, seeds = Api.G_PIPE.run_inpaint(
             input_image=comm_merge_scene_im,
             mask_image=mask_im,
             prompt=pos_prompt,
@@ -771,7 +771,8 @@ if __name__ == '__main__':
                                                                          Middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
                                                                      ]})
     import asyncio
+    from api.pipe_tasks.base import RunWorker
     Api.Api(app)
-    asyncio.run(Api.call_queue_task())
+    asyncio.run(RunWorker(None, None, None).action())
     while 1:
         time.sleep(1)

@@ -68,7 +68,9 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
             ).strftime("%Y-%m-%d %H:%M:%S"),
             "title": title,
             "level": level,
-            "env": PT_ENV}
+            "env": PT_ENV,
+            "path": path,
+        }
     else:
         traceback_str = traceback.format_exc()
         data = {
@@ -79,7 +81,9 @@ def log_echo(title: str, msg: dict, exception: Exception = None, is_collect: boo
             "exception": str(exception),
             "level": level,
             "traceback": str(traceback_str),
-            "env": PT_ENV}
+            "env": PT_ENV,
+            "path": path,
+        }
 
     if msg is not None and isinstance(msg, dict):
         try:

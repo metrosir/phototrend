@@ -17,7 +17,6 @@ def saveimage(id_task, _type: str, images: list, img_dir=None, file_names=[]):
     :param images:
     :return:
     '''
-    print("images:", images)
     from utils.constant import PT_ENV
     if PT_ENV is None:
         return None
@@ -31,8 +30,6 @@ def saveimage(id_task, _type: str, images: list, img_dir=None, file_names=[]):
         for f_idx, im in enumerate(images):
             if type(im) is not Image.Image:
                 if len(file_names) > 0 and ims_len == files_len:
-                    print("path:", f"{img_dir}/{file_names[f_idx]}")
-                    print("im:", im)
                     decode_base64_to_image(im).save(f"{img_dir}/{file_names[f_idx]}")
                 else:
                     decode_base64_to_image(im).save(f"{img_dir}/{idx}.png")
@@ -56,13 +53,13 @@ from utils.pt_logging import ia_logging, log_echo
 from utils.image import convert_png_to_mask, mask_invert, remove_bg, decode_base64_to_image, encode_to_base64, \
     encode_pil_to_base64
 
-import scripts.interrogate
+from scripts.interrogate import InterrogateModels
 from scripts.inpaint import Inpainting
 from utils.cmd_args import opts as shared
 from scripts.piplines.controlnet_pre import lineart_image, scribble_xdog
 
 queue = Queue(api_queue_dir)
-interrogate = scripts.interrogate.InterrogateModels()
+interrogate = InterrogateModels()
 
 def generate_count(count: int):
     if count is None or count < 1:
@@ -133,20 +130,20 @@ def commodity_image_generate_api_params(request_data, id_task=None):
     return type_enum, input_image, mask, base_model, pos_prompt, neg_prompt, batch_count, sampler_name, contr_inp_weight, contr_ipa_weight, contr_lin_weight, width, height, contr_scribble_weight, steps, cfg_scale
 
 
-gpipe = None
+G_PIPE = None
 
 
 def set_model():
-    global gpipe
-    if gpipe is not None:
-        return gpipe
-    gpipe = Inpainting(
+    global G_PIPE
+    if G_PIPE is not None:
+        return G_PIPE
+    G_PIPE = Inpainting(
         base_model=init_model['base_mode'],
         subfolder=None,
         controlnet=init_model['controlnets'],
         textual_inversion=init_model['textual_inversion'],
     )
-    return gpipe
+    return G_PIPE
 
 
 if shared.setup_mode:
@@ -204,10 +201,10 @@ async def call_queue_task():
 
                     pos_prompt = pos_prompt % interrogate.interrogate(input_image) if '%s' in pos_prompt else pos_prompt
 
-                    if gpipe is None:
+                    if G_PIPE is None:
                         pipe = set_model()
                     else:
-                        pipe = gpipe
+                        pipe = G_PIPE
 
                     lineart_input_img = lineart_image(input_image=input_image, width=width)
                     # lineart_mask_img = lineart_image(input_image=mask, width=width)
@@ -273,3 +270,21 @@ async def call_queue_task():
             }, exception=e, is_collect=True, path='call_queue_task')
         finally:
             time.sleep(0.5)
+
+
+async def batch_read_imgs_to_base64(img_list):
+    async def encode_image_to_base64(path):
+        def sync_encode_image_to_base64(path):
+            with Image.open(path) as im:
+                if im.size == (0, 0):
+                    return None
+                im = im.convert("RGB")
+                return encode_to_base64(im)
+        return await asyncio.to_thread(sync_encode_image_to_base64, path)
+
+    async def cys():
+        tasks = [encode_image_to_base64(path) for path in img_list]
+        res = await asyncio.gather(*tasks)
+        return res
+
+    return await cys()

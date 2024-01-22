@@ -45,6 +45,7 @@ class ApiBase(ABC):
                     self.request = request
                 transfer_duration = float(round(time.time() - self.start_time, 5))
             if request.query_params.items() is not None:
+                self.query_params = {}
                 for k, v in request.query_params.items():
                     self.query_params[k] = v
             self.before()

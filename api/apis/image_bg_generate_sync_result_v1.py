@@ -21,6 +21,7 @@ class ImageBgGenerateSyncResultV1(ApiBase):
                                                                            type="output", ) + f"/{int(self.params['idx'])}.png")
         if len(img_list) < 1:
             return []
+
         async def encode_image_to_base64(path):
             def sync_encode_image_to_base64(path):
                 with Image.open(path) as im:
@@ -29,6 +30,7 @@ class ImageBgGenerateSyncResultV1(ApiBase):
                     im = im.convert("RGB")
                     return encode_to_base64(im)
             return await asyncio.to_thread(sync_encode_image_to_base64, path)
+
         async def cys():
             tasks = [encode_image_to_base64(path) for path in img_list]
             res = await asyncio.gather(*tasks)

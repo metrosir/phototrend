@@ -1,8 +1,10 @@
 from api.base import ApiBase
-from api.functions import queue
+from api.functions import G_PIPE, interrogate, queue
 from api.functions import saveimage
 import json
 import asyncio
+
+from api.pipe_tasks.base import InputWorkerData
 
 
 class ImageBgGenerateSyncV1(ApiBase):
@@ -13,6 +15,9 @@ class ImageBgGenerateSyncV1(ApiBase):
         return self.params
 
     async def action(self):
+        await InputWorkerData(self.request, G_PIPE, interrogate).action()
+        return []
+
         data = self.request
         saveimage(
             id_task=data['id_task'],
