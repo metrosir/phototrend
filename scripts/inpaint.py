@@ -299,7 +299,7 @@ class Inpainting:
 
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
-                vae=vae,
+                # vae=vae,
                 torch_dtype=self.torch_dtype,
                 # local_files_only=self.local_files_only,
                 safety_checker=None,
