@@ -292,9 +292,10 @@ class Inpainting:
             # url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/blob/main/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
             # url = "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
             # vae_model = AutoencoderKL.from_single_file(url, torch_dtype=self.torch_dtype)
-            vae = AutoencoderKL.from_single_file(
-                "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors",
-                torch_dtype=self.torch_dtype)
+            # vae = AutoencoderKL.from_single_file(
+            #     "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors",
+            #     torch_dtype=self.torch_dtype)
+            vae = None
 
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
@@ -468,6 +469,12 @@ class Inpainting:
             iteration_count = iteration_count if iteration_count is not None else 1
             print("use_ip_adapter:", use_ip_adapter)
             print("ipadapter_img:", ipadapter_img)
+            # print("self.load_ip_adapter_weight:", self.load_ip_adapter_weight)
+            # import inspect
+            # methods = inspect.getmembers(self.pipe, predicate=inspect.ismethod)
+            # for method in methods:
+            #     print("method:", method)
+
             if use_ip_adapter and ipadapter_img is not None:
                 # TODO: 这里需要注意，如果使用ip_adapter，需要将ip_adapter的参数传入
                 self.pipe.load_ip_adapter("h94/IP-Adapter", subfolder="models", weight_name="ip-adapter-plus_sd15.bin")
