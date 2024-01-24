@@ -1,3 +1,5 @@
+import sys
+
 from api.pipe_tasks.base import Base
 from scripts.inpaint import Inpainting
 from typing import Any
@@ -81,8 +83,8 @@ class DressPipe(Base):
             [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
              f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-softPhoto-neg.pt'],
         )
-        width = (int(self.params['width']) // 8) * 8,
-        height = (int(self.params['height']) // 8) * 8,
+        width = int((int(self.params['width']) // 8) * 8)
+        height = int((int(self.params['height']) // 8) * 8)
         self.pipe.set_controlnet_input(self.controlnet_sets)
         self.pipe.run_inpaint(
             input_image=self.loca_img_path['input_image'],

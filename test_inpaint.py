@@ -178,7 +178,7 @@ def inpaint2():
 def ipadapter():
     import utils.utils
     import ip_adapter.ip_adapter
-    from api.api import gpipe, set_model
+    from api.api import G_PIPE, set_model
     import torch
     from utils.image import open_image_to_pil
 
@@ -193,10 +193,10 @@ def ipadapter():
     contr_inp_weight=0.9
     output='/data1/aigc/phototrend/worker_data/inpaint_output'
 
-    if gpipe is None:
+    if G_PIPE is None:
         pipe = set_model()
     else:
-        pipe = gpipe
+        pipe = G_PIPE
 
     input_image = '/data1/aigc/phototrend/worker_data/history/api_generate_commodity/10/input/0.png'
     # input_image = '/data1/aigc/phototrend/worker_data/5178ca50/merge_after_mask_image/0.png'
