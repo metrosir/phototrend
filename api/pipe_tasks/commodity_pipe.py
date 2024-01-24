@@ -20,7 +20,7 @@ from api.pipe_tasks.base import Base
 
 class CommodityPipe(Base):
 
-    async def action(self):
+    async def action(self, **kwargs):
         input_image = Image.open(self.loca_img_path['input_image']).convert("RGB")
         mask = Image.open(self.loca_img_path['mask_image']).convert("RGB")
         batch_count = self.params['count']

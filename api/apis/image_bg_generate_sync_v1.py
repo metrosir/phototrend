@@ -4,7 +4,7 @@ from api.functions import saveimage
 import json
 import asyncio
 
-from api.pipe_tasks.base import InputWorkerData
+from api.pipe_tasks.base import InputWorkerData, gtype_commodity
 
 
 class ImageBgGenerateSyncV1(ApiBase):
@@ -15,7 +15,7 @@ class ImageBgGenerateSyncV1(ApiBase):
         return self.params
 
     async def action(self):
-        await InputWorkerData(self.request, G_PIPE, interrogate).action()
+        await InputWorkerData(self.request, G_PIPE, interrogate).action(gtype=gtype_commodity)
         return []
 
         data = self.request

@@ -40,6 +40,7 @@ class Params:
             raise Exception("params error: controlnets field is empty")
 
         return {
+                "gtype":        params['gtype'] if 'gtype' in params else None,
                 "id_task":      params['id_task'],
                 "user_id":      params['user_id'] if 'user_id' in params else None,
                 # gtype_commodity,gtype_dress
@@ -175,7 +176,7 @@ class Base(ABC, Params):
 
 
     @abstractmethod
-    async def action(self):
+    async def action(self, **kwargs):
         pass
 
     def after(self):
@@ -277,8 +278,9 @@ class InputWorkerData (Base):
     def __call__(self, *args, **kwargs):
         self.before()
 
-    async def action(self):
+    async def action(self, **kwargs):
         self.before()
+        self.base_params['gtype'] = kwargs['gtype'] if "gtype" in kwargs and kwargs['gtype'] is not None else gtype_commodity
         queue.enqueue(json.dumps(self.base_params))
 
 
@@ -294,7 +296,7 @@ class RunWorker(Base):
     async def __call__(self, *args, **kwargs):
         pass
 
-    async def action(self):
+    async def action(self, **kwargs):
         while 1:
             try:
                 origin_data = queue.dequeue(is_complete=False)
@@ -304,7 +306,7 @@ class RunWorker(Base):
                     log_echo("Call Queue Task: ", msg={
                         "exec_args": json.dumps(data)
                     }, level='info', path='call_queue_task')
-                    if self.params['type'] != gtype_dress:
+                    if self.params['gtype'] != gtype_dress:
                         pipe = CommodityPipe(data, G_PIPE, interrogate)
                         await pipe()
                     else:

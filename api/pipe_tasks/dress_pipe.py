@@ -16,22 +16,24 @@ class DressPipe(Base):
     def params_data(self):
         return {}
 
-    async def action(self):
-        def callback(kwargs):
+    async def action(self, **kwargs):
+        def callback(params):
             req_params = {
-                "id_task": kwargs['id_task'],
+                "id_task": params['id_task'],
                 "unupload":1,
                 "app_id": "aispark",
-                "user_id": kwargs['uid'],
-                "biz_call_back": kwargs['call_back_url'],
+                "user_id": params['uid'],
+                "biz_call_back": params['call_back_url'],
                 "data": [
                     {
                         # completed/fail/running
-                        "status": kwargs['status'],
+                        "status": params['status'],
                         "preview": [
                             {
                                 "code": 0,
-                                "total_num": int(kwargs['count']),
+                                "total_num": int(params['count']),
+                                "width": int(params['width']),
+                                "height": int(params['height']),
                                 "list": [
                                 ],
                                 "interrogate": {
@@ -49,10 +51,10 @@ class DressPipe(Base):
             import inspect
             _, _, _, args = inspect.getargvalues(inspect.currentframe())
 
-            if kwargs['uid'] is None:
-                kwargs['uid'] = uuid.uuid4().hex[:8]
+            if params['uid'] is None:
+                params['uid'] = uuid.uuid4().hex[:8]
             try:
-                image_url = s3_upload(kwargs['image_path'], kwargs['uid'], kwargs['id_task'])
+                image_url = s3_upload(params['image_path'], params['uid'], params['id_task'])
             except Exception as e:
                 log_echo("dress pipe callback error", msg={
                     "params": args,
@@ -62,7 +64,7 @@ class DressPipe(Base):
             from utils.req import async_req_base,requestbase
             try:
                 req_params['data'][0]['preview'][0]['list'].append(image_url)
-                req_data = requestbase(url=kwargs['call_back_url'], method="post", data=req_params, headers={
+                req_data = requestbase(url=params['call_back_url'], method="post", data=req_params, headers={
                     'Content-Type': 'application/json',
                 })
             except Exception as e:
@@ -79,6 +81,8 @@ class DressPipe(Base):
             [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
              f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-softPhoto-neg.pt'],
         )
+        width = (int(self.params['width']) // 8) * 8,
+        height = (int(self.params['height']) // 8) * 8,
         self.pipe.set_controlnet_input(self.controlnet_sets)
         self.pipe.run_inpaint(
             input_image=self.loca_img_path['input_image'],
@@ -91,8 +95,8 @@ class DressPipe(Base):
             composite_chk=True,
             sampler_name=self.params['sampler'],
             iteration_count=self.params['count'],
-            width=(int(self.params['width']) // 8) * 8,
-            height=(int(self.params['height']) // 8) * 8,
+            width=width,
+            height=height,
             strength=self.params['strength'],
             eta=1.0,
             output=self.worker_dir_output,
@@ -111,6 +115,8 @@ class DressPipe(Base):
                 "id_task": self.params['id_task'],
                 "count": self.params['count'],
                 "status": "running",
+                "width": width,
+                "height": height,
             }
         )
         controlnet_set_data = []

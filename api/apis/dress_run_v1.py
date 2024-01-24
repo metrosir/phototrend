@@ -8,7 +8,7 @@ import pathlib
 import datetime
 import asyncio
 
-from api.pipe_tasks.base import InputWorkerData
+from api.pipe_tasks.base import InputWorkerData, gtype_dress
 
 from api.functions import G_PIPE
 
@@ -19,5 +19,5 @@ class DressRunV1(ApiBase):
         return self.params
 
     async def action(self):
-        await InputWorkerData(self.request, G_PIPE, None).action()
+        await InputWorkerData(self.request, G_PIPE, None).action(gtype=gtype_dress)
         return []
