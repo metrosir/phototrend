@@ -1,5 +1,6 @@
 from api.pipe_tasks.base import Base
 from scripts.inpaint import Inpainting
+from typing import Any
 
 from annotator.dwpose import DWposeDetector
 from PIL import Image
@@ -16,8 +17,61 @@ class DressPipe(Base):
         return {}
 
     async def action(self):
+        def callback(kwargs):
+            req_params = {
+                "id_task": kwargs['id_task'],
+                "unupload":1,
+                "app_id": "aispark",
+                "user_id": kwargs['uid'],
+                "biz_call_back": kwargs['call_back_url'],
+                "data": [
+                    {
+                        # completed/fail/running
+                        "status": kwargs['status'],
+                        "preview": [
+                            {
+                                "code": 0,
+                                "total_num": int(kwargs['count']),
+                                "list": [
+                                ],
+                                "interrogate": {
+                                    "clip_prompt": "",
+                                    "tagger_prompts": None
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+            from utils.s3 import upload as s3_upload
+            import uuid
+            from utils.pt_logging import log_echo
+            import inspect
+            _, _, _, args = inspect.getargvalues(inspect.currentframe())
+
+            if kwargs['uid'] is None:
+                kwargs['uid'] = uuid.uuid4().hex[:8]
+            try:
+                image_url = s3_upload(kwargs['image_path'], kwargs['uid'], kwargs['id_task'])
+            except Exception as e:
+                log_echo("dress pipe callback error", msg={
+                    "params": args,
+                }, exception=e, is_collect=True, path='call_queue_task')
+                return
+
+            from utils.req import async_req_base,requestbase
+            try:
+                req_params['data'][0]['preview'][0]['list'].append(image_url)
+                req_data = requestbase(url=kwargs['call_back_url'], method="post", data=req_params, headers={
+                    'Content-Type': 'application/json',
+                })
+            except Exception as e:
+                log_echo("dress pipe callback error", msg={
+                    "params": args,
+                }, exception=e, is_collect=True, path='call_queue_task')
+                return
+
         input_image = cv2.imread(self.loca_img_path['input_image'])
-        print("self.loca_img_path['input_image']:", self.loca_img_path['input_image'])
         self.params['prompt'] = \
             self.params['prompt'] % self.interrogate.interrogate(Image.fromarray(cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB))) if '%s' in self.params['prompt'] else self.params['prompt']
 
@@ -49,6 +103,15 @@ class DressPipe(Base):
             # ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB') if self.params['reference'] else None,
             ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB'),
             ip_adapter_scale=self.params['reference_scale'],
+            call_back_func=callback,
+            call_back_func_params={
+                "image_path": self.worker_dir_output + '{idx}.png',
+                "call_back_url": self.params['callback_url'],
+                "uid": self.params['user_id'],
+                "id_task": self.params['id_task'],
+                "count": self.params['count'],
+                "status": "running",
+            }
         )
         controlnet_set_data = []
         # for contl in self.params['controlnets']:

@@ -9,7 +9,7 @@ class Rembg:
         self.out_img = out_img
         self.is_call_api = is_call_api
 
-    async def __call__(self, cloud_uid):
+    async def __call__(self, cloud_uid, worker_id):
         if self.is_call_api:
             await self.call_api()
         else:
@@ -17,7 +17,7 @@ class Rembg:
 
         if os.path.exists(self.out_img):
             # todo s3
-            img_url = await s3_upload(self.out_img, cloud_uid)
+            img_url = s3_upload(self.out_img, cloud_uid, worker_id)
             return img_url
         return None
 

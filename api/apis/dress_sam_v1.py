@@ -55,7 +55,7 @@ class DressSamV1(ApiBase):
             # res['sam'] = sam()
             # rembg_img_path = rembg()
 
-            res['sam'], res['rembg'] = await asyncio.gather(sam(), rembg(self.params['uid']))
+            res['sam'], res['rembg'] = await asyncio.gather(sam(), rembg(self.params['uid']), self.params['id_task'])
             return res
 
 

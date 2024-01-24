@@ -55,6 +55,9 @@ class Params:
                 "reference": False if 'reference'not in params['data'] or params['data']['reference'] is None else params['data']['reference'],
                 "reference_scale": 0.5 if 'reference_scale' not in params['data'] or params['data']['reference_scale'] is None else params['data']['reference_scale'],
 
+                # 模特ID
+                "face_id": None if 'face_id' not in params['data'] or params['data']['face_id'] is None else params['data']['face_id'],
+
                 "base_model": params['data']['checkpoint_addr'],
 
                 "count": params['data']['preset'][0]['count'],

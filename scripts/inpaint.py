@@ -11,6 +11,7 @@ from utils.cmd_args import opts as shared
 from utils.image import auto_resize_to_pil, read_image_to_np, encode_to_base64, save_output_image_to_pil
 from utils.datadir import generate_inpaint_image_dir
 import scripts.devices as devices
+from typing import Callable, Any
 
 from PIL import Image, ImageFilter
 from PIL.PngImagePlugin import PngInfo
@@ -424,7 +425,9 @@ class Inpainting:
                     input_image,mask_image,
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
-                    open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None, ip_adapter_scale = 0.45):
+                    open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None, ip_adapter_scale = 0.45,
+                    call_back_func: Callable[[Any], Any] = None, call_back_func_params: dict = None
+                    ):
 
         try:
             piplock.acquire()
@@ -560,11 +563,16 @@ class Inpainting:
                     # img_idx = len(os.listdir(output))
                     # save_name=os.path.join(output, f"{img_idx}.png")
                     # output_image.save(save_name, pnginfo=metadata)
-                    save_output_image_to_pil(output_image, output)
+                    path = save_output_image_to_pil(output_image, output)
                     if ret_base64:
                         output_list.append(encode_to_base64(output_image))
                     else:
                         output_list.append(output_image)
+                    if call_back_func is not None:
+
+                        call_back_func_params['image_path'] = path
+                        call_back_func_params['status'] = "running" if count < iteration_count - 1 else "completed"
+                        threading.Thread(target=call_back_func, args=(call_back_func_params,)).start()
                 else:
                     if ret_base64:
                         output_list.append(encode_to_base64(output_image))

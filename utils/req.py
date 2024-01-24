@@ -18,7 +18,7 @@ api_sd_models = f'{sd_host}/sdapi/v1/sd-models'
 api_sd_vae = f'{sd_host}/sdapi/v1/sd-vae'
 
 
-def requestsd(url, data, headers=None, method='post'):
+def requestbase(url, data, headers=None, method='post'):
     if headers is None:
         headers = {
             'accept': 'application/json',
@@ -31,8 +31,7 @@ def requestsd(url, data, headers=None, method='post'):
         else:
             response = requests.get(url, headers=headers, data=json.dumps(data))
     except Exception as e:
-        print("requests error:", str(e))
-        raise Exception(f"requests error, api:{url}")
+        raise e
     response_data = response.json()
     if "error" not in response_data:
         return response_data
@@ -45,14 +44,14 @@ def interrogate(image_path):
         'image': image_to_base64(image_path),
         'model': 'clip'
     }
-    response_data = requestsd(api_interrogate, data=data)
+    response_data = requestbase(api_interrogate, data=data)
     if "caption" in response_data:
         return response_data['caption']
     return None
 
 def sd_models():
     try:
-        response_data = requestsd(api_sd_models, data={}, method='get')
+        response_data = requestbase(api_sd_models, data={}, method='get')
     except Exception as e:
         print("requests error:", str(e))
         return None
@@ -64,7 +63,7 @@ def sd_models():
 
 def sd_vae():
     try:
-        response_data = requestsd(api_sd_vae, data={}, method='get')
+        response_data = requestbase(api_sd_vae, data={}, method='get')
     except Exception as e:
         print("requests error:", str(e))
         return None
@@ -262,7 +261,7 @@ def generate_image(select_model,select_vae, prompt, negative_prompt, batch_count
         'ControlNet': controlNetArgs
     }
 
-    response_data = requestsd(api_txt2img, data=data)
+    response_data = requestbase(api_txt2img, data=data)
     generate_imgs = []
 
     if int(g_type) == 1:

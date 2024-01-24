@@ -186,7 +186,9 @@ def save_output_image_to_pil(img, output_dir):
     lock.acquire()
     img_idx = len(os.listdir(output_dir))
     lock.release()
-    img.save(os.path.join(output_dir, f'{img_idx}.png'), format="PNG", quality=100)
+    path = os.path.join(output_dir, f'{img_idx}.png')
+    img.save(path, format="PNG", quality=100)
+    return path
 
 
 def generate_noise(seed, width, height):
