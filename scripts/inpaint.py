@@ -426,8 +426,8 @@ class Inpainting:
                     prompt, n_prompt,
                     ddim_steps, cfg_scale, seed, composite_chk, width, height, output, sampler_name="DDIM", iteration_count=1, strength=0.5, eta=0.1, ret_base64=False,
                     open_after=None, after_params=None, res_img_info=False, use_ip_adapter=False, ipadapter_img=None, ip_adapter_scale = 0.45,
-                    call_back_func: Callable[[Any], Any] = None, call_back_func_params: dict = None
-                    ):
+                    call_back_func: Callable[[Any], Any] = None, call_back_func_params: dict = None,
+                    **kwargs):
 
         try:
             piplock.acquire()
@@ -461,17 +461,16 @@ class Inpainting:
                     self.pipe.enable_attention_slicing()
                 torch_generator = torch.Generator("cuda")
 
+            # Image.fromarray(mask_image).save("mask_image_1.png")
             init_image, mask_image = auto_resize_to_pil(input_image, mask_image)
             # mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4)).convert("L").filter(ImageFilter.GaussianBlur(3))
-            # save_output_image_to_pil(mask_image, '/data1/aigc/phototrend/worker_data/inpaint_output')
+            # save_output_image_to_pil(mask_image, '/data1/aigc/phototrend/worker_data/history/dress/20001/input')
             if width is None or height is None:
                 width, height = init_image.size
 
             output_list = []
             seeds = []
             iteration_count = iteration_count if iteration_count is not None else 1
-            print("use_ip_adapter:", use_ip_adapter)
-            print("ipadapter_img:", ipadapter_img)
             # print("self.load_ip_adapter_weight:", self.load_ip_adapter_weight)
             # import inspect
             # methods = inspect.getmembers(self.pipe, predicate=inspect.ismethod)
@@ -510,6 +509,9 @@ class Inpainting:
                     "generator": generator,
                     "strength": strength,
                     "eta": eta,
+
+                    # guess_mode: The ControlNet encoder tries to recognize the content of the input image even if you remove all. prompts.
+                    # A `guidance_scale` value between 3.0 and 5.0 is recommended.
                     "guess_mode": True,
                     # "control_guidance_start"
                 }
@@ -530,8 +532,23 @@ class Inpainting:
                     pipe_args_dict.update({"ip_adapter_image": ipadapter_img})
 
                 output_image = self.pipe(**pipe_args_dict).images[0]
+                twice_pipe_dict = {"strength": 0.3, "image": output_image, "guess_mode": False}
+
+                if kwargs.get("twice"):
+                    init_image, mask_image = auto_resize_to_pil(np.array(output_image), np.array(mask_image))
+                    # print('kwargs.get("twice_params"):', kwargs.get("twice_params"), type(kwargs.get("twice_params")))
+                    twice_pipe_dict = kwargs.get("twice_params") if kwargs.get("twice_params") is not None else twice_pipe_dict
+                    twice_pipe_dict.update({"image": init_image})
+                    # print("twice_pipe_dict:", twice_pipe_dict)
+
+                    pipe_args_dict.update(twice_pipe_dict)
+                    ia_logging.info(f"Pipe Twice Args Dict:{pipe_args_dict}")
+                    output_image = self.pipe(**pipe_args_dict).images[0]
 
                 if composite_chk:
+                    # print("Image.fromarray(output_image).size:", output_image.size)
+                    # print("init_image.size:", init_image.size)
+
                     dilate_mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4))
                     output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
                 if open_after is not None and open_after:

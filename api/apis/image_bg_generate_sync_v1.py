@@ -15,7 +15,7 @@ class ImageBgGenerateSyncV1(ApiBase):
         return self.params
 
     async def action(self):
-        await InputWorkerData(self.request, G_PIPE, interrogate).action(gtype=gtype_commodity)
+        await InputWorkerData(self.request, G_PIPE, interrogate, gtype=gtype_commodity).action()
         return []
 
         data = self.request

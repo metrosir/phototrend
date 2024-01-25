@@ -3,6 +3,7 @@ from api.functions import *
 
 from api.pipe_tasks.base import InputWorkerData, RunWorker, CommodityPipe
 
+from api.pipe_tasks.base import gtype_commodity
 
 class ImageBgGenerateV1(ApiBase):
 
@@ -11,7 +12,7 @@ class ImageBgGenerateV1(ApiBase):
 
     async def action(self):
 
-        pipe = CommodityPipe(self.request, G_PIPE, interrogate, task_sync=False)
+        pipe = CommodityPipe(self.request, G_PIPE, interrogate, task_sync=False, gtype=gtype_commodity)
         return await pipe()
 
         data = self.request

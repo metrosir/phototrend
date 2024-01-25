@@ -19,5 +19,6 @@ class DressRunV1(ApiBase):
         return self.params
 
     async def action(self):
-        await InputWorkerData(self.request, G_PIPE, None).action(gtype=gtype_dress)
+        print("gtype_dress", gtype_dress)
+        await InputWorkerData(self.request, G_PIPE, None, gtype=gtype_dress).action()
         return []

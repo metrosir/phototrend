@@ -43,7 +43,7 @@ class Params:
                 "gtype":        params['gtype'] if 'gtype' in params else None,
                 "id_task":      params['id_task'],
                 "user_id":      params['user_id'] if 'user_id' in params else None,
-                # gtype_commodity,gtype_dress
+                # 1：假模；2：真人
                 "type":         params['data']['type'] if 'type' in params['data'] else None,
 
                 # 主图
@@ -80,7 +80,7 @@ class Params:
 class Base(ABC, Params):
     data = []
 
-    def __init__(self, base_params, pipe: [Inpainting, None], interr: [InterrogateModels, None], task_sync=True):
+    def __init__(self, base_params, pipe: [Inpainting, None], interr: [InterrogateModels, None], task_sync=True, gtype=gtype_commodity):
 
         self.base_params = base_params
         self.pipe = pipe
@@ -96,6 +96,8 @@ class Base(ABC, Params):
         self.worker_dir_output = None
 
         self.task_sync = task_sync
+
+        self.gtype = gtype
 
         self.loca_img_path = {
             "reference_image": '',
@@ -125,11 +127,13 @@ class Base(ABC, Params):
             'params': copy.deepcopy(self.params)
         }, level="info", path=f"sync_tasks/{self.__class__.__name__}")
 
-        if self.params['type'] == gtype_dress:
+        print("self.gtype:", self.gtype)
+        if self.gtype == gtype_dress:
             self.worker_dir_input = dress_worker_history.format(worker_id=self.params['id_task'], type='input')
             self.worker_dir_output = dress_worker_history.format(worker_id=self.params['id_task'], type='output')
+
         # todo 兼容商品图
-        if self.params['type'] == gtype_commodity or self.params['type'] is None:
+        if self.gtype == gtype_commodity:
             self.worker_dir_input = api_generate_commodity_dir.format(id_task=self.params['id_task'], type='input')
             self.worker_dir_output = api_generate_commodity_dir.format(id_task=self.params['id_task'], type='output')
 
@@ -280,7 +284,7 @@ class InputWorkerData (Base):
 
     async def action(self, **kwargs):
         self.before()
-        self.base_params['gtype'] = kwargs['gtype'] if "gtype" in kwargs and kwargs['gtype'] is not None else gtype_commodity
+        self.base_params['gtype'] = self.gtype
         queue.enqueue(json.dumps(self.base_params))
 
 
@@ -307,10 +311,10 @@ class RunWorker(Base):
                         "exec_args": json.dumps(data)
                     }, level='info', path='call_queue_task')
                     if self.params['gtype'] != gtype_dress:
-                        pipe = CommodityPipe(data, G_PIPE, interrogate)
+                        pipe = CommodityPipe(data, G_PIPE, interrogate, gtype=gtype_commodity)
                         await pipe()
                     else:
-                        pipe = DressPipe(data, G_PIPE, interrogate)
+                        pipe = DressPipe(data, G_PIPE, interrogate, gtype=gtype_dress)
                         await pipe()
                     queue.complete(origin_data)
             except Exception as e:

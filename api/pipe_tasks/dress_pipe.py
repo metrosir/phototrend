@@ -119,6 +119,12 @@ class DressPipe(Base):
                 "status": "running",
                 "width": width,
                 "height": height,
+            },
+            # 二次绘制
+            twice=True,
+            twice_params={
+                "strength": 0.3,
+                "guess_mode": True,
             }
         )
         controlnet_set_data = []
