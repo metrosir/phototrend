@@ -21,8 +21,9 @@ from api.pipe_tasks.base import Base
 class CommodityPipe(Base):
     async def __call__(self, *args, **kwargs):
         ia_logging.info(f"{self.__class__.__name__} worker start: {self.params['id_task']}")
-        await super().__call__(*args, **kwargs)
+        ret = await super().__call__(*args, **kwargs)
         ia_logging.info(f"{self.__class__.__name__} worker end: {self.params['id_task']}")
+        return ret
 
     async def action(self, **kwargs):
         input_image = Image.open(self.loca_img_path['input_image']).convert("RGB")
