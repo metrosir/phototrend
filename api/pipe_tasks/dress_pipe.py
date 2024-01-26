@@ -7,6 +7,7 @@ from typing import Any
 from annotator.dwpose import DWposeDetector
 from PIL import Image
 from scripts.piplines.controlnet_pre import lineart_image, scribble_xdog, canny
+from utils.pt_logging import ia_logging
 
 from utils.datadir import project_dir
 
@@ -14,6 +15,11 @@ import cv2
 
 
 class DressPipe(Base):
+
+    async def __call__(self, *args, **kwargs):
+        ia_logging.info(f"{self.__class__.__name__} worker start: {self.params['id_task']}")
+        await super().__call__(*args, **kwargs)
+        ia_logging.info(f"{self.__class__.__name__} worker end: {self.params['id_task']}")
 
     def params_data(self):
         return {}
@@ -123,8 +129,9 @@ class DressPipe(Base):
             # 二次绘制
             twice=True,
             twice_params={
-                "strength": 0.3,
+                "strength": 0.4,
                 "guess_mode": True,
+                "num_inference_steps": 30,
             }
         )
         controlnet_set_data = []

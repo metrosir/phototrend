@@ -184,7 +184,7 @@ def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale,
             "eta": 0.1,
         }
 
-        print(f"pipe_args_dict:{pipe_args_dict}")
+        # print(f"pipe_args_dict:{pipe_args_dict}")
         output_image = pipe(**pipe_args_dict).images[0]
 
         if composite_chk:
@@ -512,6 +512,7 @@ class Inpainting:
 
                     # guess_mode: The ControlNet encoder tries to recognize the content of the input image even if you remove all. prompts.
                     # A `guidance_scale` value between 3.0 and 5.0 is recommended.
+                    # "guess_mode": True,
                     "guess_mode": True,
                     # "control_guidance_start"
                 }
@@ -535,20 +536,17 @@ class Inpainting:
                 twice_pipe_dict = {"strength": 0.3, "image": output_image, "guess_mode": False}
 
                 if kwargs.get("twice"):
-                    init_image, mask_image = auto_resize_to_pil(np.array(output_image), np.array(mask_image))
-                    # print('kwargs.get("twice_params"):', kwargs.get("twice_params"), type(kwargs.get("twice_params")))
+                    # todo
+                    save_output_image_to_pil(output_image, output)
+                    # init_image, mask_image = auto_resize_to_pil(np.array(output_image), np.array(mask_image))
                     twice_pipe_dict = kwargs.get("twice_params") if kwargs.get("twice_params") is not None else twice_pipe_dict
-                    twice_pipe_dict.update({"image": init_image})
-                    # print("twice_pipe_dict:", twice_pipe_dict)
+                    twice_pipe_dict.update({"image": output_image})
 
                     pipe_args_dict.update(twice_pipe_dict)
                     ia_logging.info(f"Pipe Twice Args Dict:{pipe_args_dict}")
                     output_image = self.pipe(**pipe_args_dict).images[0]
 
                 if composite_chk:
-                    # print("Image.fromarray(output_image).size:", output_image.size)
-                    # print("init_image.size:", init_image.size)
-
                     dilate_mask_image = Image.fromarray(cv2.dilate(np.array(mask_image), np.ones((3, 3), dtype=np.uint8), iterations=4))
                     output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
                 if open_after is not None and open_after:
@@ -571,7 +569,7 @@ class Inpainting:
                 prompt_text = prompt if prompt else ""
                 negative_prompt_text = "\nNegative prompt: " + n_prompt if n_prompt else ""
                 infotext = f"{prompt_text}{negative_prompt_text}\n{generation_params_text}".strip()
-                print("infotext:", infotext)
+                # print("infotext:", infotext)
 
                 metadata = PngInfo()
                 metadata.add_text("parameters", infotext)

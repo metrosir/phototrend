@@ -109,13 +109,9 @@ class Base(ABC, Params):
         try:
             self.before()
             # self.params = self.params_data()
-            print('step 1')
             self.cut()
-            print('step 2')
             self.data = await self.action()
-            print('step 3')
             self.after()
-            print('step 4')
         except Exception as e:
             log_echo(title="pipe error", msg=self.params, level="error", path=f"sync_tasks/{self.__class__.__name__}", exception=e, is_collect=True)
         finally:
@@ -127,7 +123,6 @@ class Base(ABC, Params):
             'params': copy.deepcopy(self.params)
         }, level="info", path=f"sync_tasks/{self.__class__.__name__}")
 
-        print("self.gtype:", self.gtype)
         if self.gtype == gtype_dress:
             self.worker_dir_input = dress_worker_history.format(worker_id=self.params['id_task'], type='input')
             self.worker_dir_output = dress_worker_history.format(worker_id=self.params['id_task'], type='output')
@@ -159,6 +154,7 @@ class Base(ABC, Params):
                     if self.params[field].startswith('http'):
                         import wget
                         wget.download(self.params[field], path)
+                        print("\n")
                     else:
                         saveimage(
                             id_task=self.params['id_task'],
