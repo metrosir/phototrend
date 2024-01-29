@@ -41,6 +41,7 @@ transformers_logging.set_verbosity_warning()
 import warnings
 warnings.filterwarnings("ignore", message="Some weights of the model checkpoint at metrosir/phototrend were not used when initializing ControlNetModel: ['ip_adapter', 'image_proj']")
 from typing import List
+from utils.constant import project_dir
 
 import threading
 
@@ -294,9 +295,13 @@ class Inpainting:
             # url = "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be a local file
             # vae_model = AutoencoderKL.from_single_file(url, torch_dtype=self.torch_dtype)
             # vae = AutoencoderKL.from_single_file(
-            #     "/data/aigc/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors",
-            #     torch_dtype=self.torch_dtype)
-            vae = None
+            #     f"{project_dir}/models/VAE/toneRangeCompressor_trcvae.safetensors",
+            #     in_channels=4,
+            #     out_channels=4,
+            #     layers_per_block=2,
+            #     torch_dtype=self.torch_dtype
+            # )
+            # vae = None
 
             self.pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
                 self.base_model,
@@ -537,7 +542,7 @@ class Inpainting:
 
                 if kwargs.get("twice"):
                     # todo
-                    save_output_image_to_pil(output_image, output)
+                    # save_output_image_to_pil(output_image, output)
                     # init_image, mask_image = auto_resize_to_pil(np.array(output_image), np.array(mask_image))
                     twice_pipe_dict = kwargs.get("twice_params") if kwargs.get("twice_params") is not None else twice_pipe_dict
                     twice_pipe_dict.update({"image": output_image})
@@ -551,6 +556,8 @@ class Inpainting:
                     output_image = Image.composite(output_image, init_image, dilate_mask_image.convert("L").filter(ImageFilter.GaussianBlur(3)))
                 if open_after is not None and open_after:
                     if after_params is not None and after_params['base'] is not None:
+                        # 加后处理和不加后处理对比
+                        # save_output_image_to_pil(output_image, output)
                         from .after.final import FinalProcessorBasic
                         final = FinalProcessorBasic(after_params['base'])
                         output_image=final.process(seed, output_image)

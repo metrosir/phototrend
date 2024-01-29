@@ -66,7 +66,16 @@ class CommodityPipe(Base):
                                                 composite_chk, width,
                                                 height, output, sampler_name, batch_count,
                                                 strength,
-                                                eta, ret_base64)
+                                                eta, ret_base64, True, {
+                                                    "base": {
+                                                        "contrast":1.0,
+                                                        "brightness":1.0,
+                                                        "sharpeness":1.0,
+                                                        "color_saturation": 1.6,
+                                                        "color_temperature": 0,
+                                                        "noise_alpha_final": 0.01,
+                                                    }
+                                                })
             return result
 
         await pipe_run_inpaint(

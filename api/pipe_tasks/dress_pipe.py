@@ -108,8 +108,8 @@ class DressPipe(Base):
             strength=self.params['strength'],
             eta=1.0,
             output=self.worker_dir_output,
-            open_after=None,
-            after_params=None,
+            # open_after=None,
+            # after_params=None,
             res_img_info=True,
             use_ip_adapter=self.params['reference'],
             # ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB') if self.params['reference'] else None,
@@ -132,7 +132,19 @@ class DressPipe(Base):
                 "strength": 0.4,
                 "guess_mode": True,
                 "num_inference_steps": 30,
-            }
+            },
+
+            open_after=True,
+            after_params={
+                "base": {
+                    "contrast": 1.0,
+                    "brightness": 1.0,
+                    "sharpeness": 1.0,
+                    "color_saturation": 1.6,
+                    "color_temperature": 0,
+                    "noise_alpha_final": 0.01,
+                }
+            },
         )
         controlnet_set_data = []
         # for contl in self.params['controlnets']:
