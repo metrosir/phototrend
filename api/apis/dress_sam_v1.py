@@ -36,7 +36,8 @@ class DressSamV1(ApiBase):
             # dir = os.path.join(dir, 'input')
             if not os.path.exists(dir):
                 pathlib.Path.mkdir(pathlib.Path(dir), parents=True, exist_ok=True)
-            file_path = os.path.join(dir, 'dress.' + file.filename.split('.')[-1])
+            # file_path = os.path.join(dir, 'dress.' + file.filename.split('.')[-1])
+            file_path = os.path.join(dir, 'dress.png')
             with open(file_path, 'wb') as f:
                 f.write(content)
                 f.close()
