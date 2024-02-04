@@ -113,7 +113,7 @@ class DressPipe(Base):
             res_img_info=True,
             use_ip_adapter=self.params['reference'],
             # ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB') if self.params['reference'] else None,
-            ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB'),
+            ipadapter_img=Image.open(self.loca_img_path['reference_image']).convert('RGB') if self.loca_img_path['reference_image'] is not '' and self.loca_img_path['reference_image'] is not None else None,
             ip_adapter_scale=self.params['reference_scale'],
             call_back_func=callback,
             call_back_func_params={
