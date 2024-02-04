@@ -140,7 +140,7 @@ class DressPipe(Base):
                     "contrast": 1.0,
                     "brightness": 1.0,
                     "sharpeness": 1.0,
-                    "color_saturation": 1.6,
+                    "color_saturation": 1.3,
                     "color_temperature": 0,
                     "noise_alpha_final": 0.01,
                 }
