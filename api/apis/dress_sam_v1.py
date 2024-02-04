@@ -33,7 +33,7 @@ class DressSamV1(ApiBase):
 
             content = await file.read()
             dir = datadir.dress_worker_history.format(worker_id=self.params['id_task'], type='input')
-            dir = os.path.join(dir, 'input')
+            # dir = os.path.join(dir, 'input')
             if not os.path.exists(dir):
                 pathlib.Path.mkdir(pathlib.Path(dir), parents=True, exist_ok=True)
             file_path = os.path.join(dir, 'dress.' + file.filename.split('.')[-1])
