@@ -1,4 +1,5 @@
 from api.base import ApiBase
+from fastapi import Request
 from api.functions import *
 
 import utils.datadir as datadir
@@ -55,9 +56,12 @@ class DressSamV1(ApiBase):
             # res['sam'] = sam()
             # rembg_img_path = rembg()
 
-            res['sam'], res['rembg'] = await asyncio.gather(sam(), rembg(self.params['uid']), self.params['id_task'])
+            res['sam'], res['rembg'] = await asyncio.gather(sam(), rembg(self.params['uid'], self.params['id_task']))
             return res
 
+        def after(self, req: Request, **kwargs):
+            kwargs['params'] = self.params
+            super().after(req, **kwargs)
 
 
 
