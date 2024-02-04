@@ -105,7 +105,7 @@ class DressPipe(Base):
             iteration_count=self.params['count'],
             width=width,
             height=height,
-            strength=self.params['strength'] if self.params['type'] == 1 else 0.5,
+            strength=0.75 if self.params['type'] == 1 else 0.5,
             eta=1.0,
             output=self.worker_dir_output,
             # open_after=None,
