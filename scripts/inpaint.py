@@ -80,6 +80,27 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     return image
 
 
+def rgba2rgb(rgba, background=(255,255,255) ):
+    row, col, ch = rgba.shape
+
+    if ch == 3:
+        return rgba
+
+    assert ch == 4, 'RGBA image has 4 channels.'
+
+    rgb = np.zeros( (row, col, 3), dtype='float32' )
+    r, g, b, a = rgba[:,:,0], rgba[:,:,1], rgba[:,:,2], rgba[:,:,3]
+
+    a = np.asarray( a, dtype='float32' ) / 255.0
+
+    R, G, B = background
+
+    rgb[:,:,0] = r * a + (1.0 - a) * R
+    rgb[:,:,1] = g * a + (1.0 - a) * G
+    rgb[:,:,2] = b * a + (1.0 - a) * B
+
+    return np.asarray( rgb, dtype='uint8' )
+
 def run_inpaint(input_image,mask_image, prompt, n_prompt, ddim_steps, cfg_scale, seed, inp_model_id, composite_chk,
                 controlnets = [], sampler_name="DDIM", iteration_count=1):
     if platform.system() == "Darwin":
@@ -441,6 +462,12 @@ class Inpainting:
                     input_image = read_image_to_np(input_image)
                 if type(input_image) is Image.Image:
                     input_image = np.array(input_image)
+            # input_image 将png 的透明层改成白色
+            # input_image = cv2.cvtColor(input_image, cv2.COLOR_RGBA2RGB)
+            # 判断 input_image 是否为rgba
+            print("input_image.shape:", input_image.shape)
+            if input_image.shape[2] == 4:
+                input_image = rgba2rgb(input_image)
 
             if not type(mask_image) is np.ndarray:
                 if type(mask_image) is str:
