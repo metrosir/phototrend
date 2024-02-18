@@ -82,8 +82,9 @@ class DressPipe(Base):
                 return
 
         input_image = cv2.imread(self.loca_img_path['input_image'])
-        self.params['prompt'] = \
-            self.params['prompt'] % self.interrogate.interrogate(Image.fromarray(cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB))) if '%s' in self.params['prompt'] else self.params['prompt']
+        # self.params['prompt'] = \
+        #     self.params['prompt'] % self.interrogate.interrogate(Image.fromarray(cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB))) if '%s' in self.params['prompt'] else self.params['prompt']
+        self.params['prompt'] = self.params['prompt'] % "simple background, white background" if '%s' in self.params['prompt'] else self.params['prompt']
 
         self.pipe.load_textual_inversion(
             [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
