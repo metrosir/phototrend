@@ -128,7 +128,7 @@ class DressPipe(Base):
                 "height": height,
             },
             # 二次绘制
-            twice=True,
+            twice=False,
             twice_params={
                 "strength": 0.4,
                 "guess_mode": True,
