@@ -281,7 +281,10 @@ class InputWorkerData (Base):
     async def action(self, **kwargs):
         self.before()
         self.base_params['gtype'] = self.gtype
-        queue.enqueue(json.dumps(self.base_params))
+        put_data = json.dumps(self.base_params)
+        with open(f'{self.worker_dir_input}/put_data.json', 'w') as f:
+            f.write(put_data)
+        queue.enqueue(put_data)
 
 
 # queue_task_data = None

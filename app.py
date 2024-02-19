@@ -462,19 +462,34 @@ def commodity_tab():
                         with gr.TabItem("api generate result"):
                                 with gr.Box():
                                     def disp_apihistory(id_task):
-                                        input = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                          type='input') + '/*.png'
+                                        put_data = ''
+                                        input_dir = datadir.api_generate_commodity_dir.format(id_task=id_task, type='input')
+                                        output_dir =  datadir.api_generate_commodity_dir.format(id_task=id_task, type='output')
+                                        input = input_dir + '/*.png'
                                         imglist = glob.glob(input)
                                         if len(imglist) > 0:
-                                            output = datadir.api_generate_commodity_dir.format(id_task=id_task,
-                                                                                           type='output') + '/*.png'
-                                            return glob.glob(input), glob.glob(output)
+                                            if os.path.exists(input_dir + '/put_data.json'):
+                                                with open(input_dir + '/put_data.json') as f:
+                                                    put_data = json.load(f)
+                                            output = output_dir + '/*.png'
+                                            return glob.glob(input), glob.glob(output), put_data
 
                                         input = datadir.api_shadow_simple_gb_dir.format(id_task=id_task,
                                                                                         type='input') + '/*.png'
-                                        output = datadir.api_shadow_simple_gb_dir.format(id_task=id_task,
-                                                                                         type='output') + '/*.png'
-                                        return glob.glob(input), glob.glob(output)
+                                        imglist = glob.glob(input)
+                                        if len(imglist) > 0:
+                                            output = datadir.api_shadow_simple_gb_dir.format(id_task=id_task,
+                                                                                             type='output') + '/*.png'
+                                            return glob.glob(input), glob.glob(output), put_data
+
+                                        input_dir = datadir.dress_worker_history.format(worker_id=id_task, type='input')
+                                        output_dir = datadir.dress_worker_history.format(worker_id=id_task, type='output')
+                                        input = input_dir + '/*.png'
+                                        output = output_dir + '/*.png'
+                                        if os.path.exists(input_dir + '/put_data.json'):
+                                            with open(input_dir + '/put_data.json') as f:
+                                                put_data = json.load(f)
+                                        return glob.glob(input), glob.glob(output), put_data
 
                                     with gr.Row():
                                         with gr.Box():
@@ -489,7 +504,9 @@ def commodity_tab():
                                         with gr.Column():
                                             output = gr.Gallery()
                                             pass
-                                    api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output])
+                                    with gr.Row():
+                                        put_data = gr.Text('None', elem_id="input_img", label="put log")
+                                    api_hist_butt.click(fn=disp_apihistory, inputs=[task_id], outputs=[input, output, put_data])
                         with gr.TabItem("模板实验"):
                             with gr.Tabs():
                                 with gr.TabItem("模板"):
