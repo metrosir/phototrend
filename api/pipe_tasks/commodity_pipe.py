@@ -16,6 +16,7 @@ from utils.req import async_back_host_generate
 
 
 from api.pipe_tasks.base import Base
+from utils.datadir import project_dir
 
 
 class CommodityPipe(Base):
@@ -53,6 +54,10 @@ class CommodityPipe(Base):
 
         pos_prompt = pos_prompt % interrogate.interrogate(input_image) if '%s' in pos_prompt else pos_prompt
         self.pipe.set_controlnet_input(self.controlnet_sets)
+        self.pipe.load_textual_inversion(
+            [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
+             f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-softPhoto-neg.pt'],
+        )
 
         async def pipe_run_inpaint(input_image, mask, pos_prompt, neg_prompt, ddim_steps, cfg_scale,
                                    seed,
@@ -82,7 +87,7 @@ class CommodityPipe(Base):
             input_image=input_image,
             mask=mask,
             pos_prompt=pos_prompt,
-            neg_prompt=neg_prompt,
+            neg_prompt=neg_prompt+"<epiCPhotoGasm-colorfulPhoto-neg>",
             ddim_steps=steps,
             cfg_scale=cfg_scale,
             seed=-1,
