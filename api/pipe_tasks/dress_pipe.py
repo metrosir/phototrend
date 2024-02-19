@@ -136,7 +136,7 @@ class DressPipe(Base):
                 "num_inference_steps": 30,
             },
 
-            open_after=True,
+            open_after=False,
             after_params={
                 "base": {
                     "contrast": 1.0,
