@@ -470,7 +470,7 @@ def commodity_tab():
                                         if len(imglist) > 0:
                                             if os.path.exists(input_dir + '/put_data.json'):
                                                 with open(input_dir + '/put_data.json') as f:
-                                                    put_data = json.load(f)
+                                                    put_data = f.read()
                                             output = output_dir + '/*.png'
                                             return glob.glob(input), glob.glob(output), put_data
 
@@ -488,7 +488,7 @@ def commodity_tab():
                                         output = output_dir + '/*.png'
                                         if os.path.exists(input_dir + '/put_data.json'):
                                             with open(input_dir + '/put_data.json') as f:
-                                                put_data = json.load(f)
+                                                put_data = f.read()
                                         return glob.glob(input), glob.glob(output), put_data
 
                                     with gr.Row():
