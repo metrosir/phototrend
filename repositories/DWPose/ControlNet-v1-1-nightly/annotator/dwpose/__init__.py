@@ -126,8 +126,9 @@ class DWposeDetector:
             # elif distance_tags['near'] in pose_scores:
             #     distance_enum = 0
 
-
-            return True, distance_enum
+            if distance_enum is not None:
+                return True, distance_enum
+            return False, distance_enum
 
             un_visible = subset < 0.3
             candidate[un_visible] = -1
