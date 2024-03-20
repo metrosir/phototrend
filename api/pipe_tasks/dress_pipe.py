@@ -87,8 +87,10 @@ class DressPipe(Base):
         self.params['prompt'] = self.params['prompt'] % "simple background, white background" if '%s' in self.params['prompt'] else self.params['prompt']
 
         self.pipe.load_textual_inversion(
-            [f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
-             f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-softPhoto-neg.pt'],
+            [
+                f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-colorfulPhoto-neg.pt',
+                f'{project_dir}/models/textual_inversion/negative_prompt/epiCPhotoGasm-softPhoto-neg.pt'
+             ],
         )
         width = int((int(self.params['width']) // 8) * 8)
         height = int((int(self.params['height']) // 8) * 8)
@@ -107,7 +109,7 @@ class DressPipe(Base):
             width=width,
             height=height,
             # strength=0.75 if self.params['type'] == 1 else 0.5,
-            strength=1,
+            strength=self.params['strength'],
             eta=1.0,
             output=self.worker_dir_output,
             # open_after=None,

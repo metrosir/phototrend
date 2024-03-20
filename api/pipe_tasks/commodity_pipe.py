@@ -87,7 +87,7 @@ class CommodityPipe(Base):
             input_image=input_image,
             mask=mask,
             pos_prompt=pos_prompt,
-            neg_prompt=neg_prompt+"<epiCPhotoGasm-colorfulPhoto-neg>",
+            neg_prompt=neg_prompt+"<epiCPhotoGasm-colorfulPhoto-neg>,<epiCPhotoGasm-softPhoto-neg>",
             ddim_steps=steps,
             cfg_scale=cfg_scale,
             seed=-1,

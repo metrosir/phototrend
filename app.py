@@ -767,6 +767,27 @@ def clothes_ui():
             total_history.click(fn=refresh_history_img, inputs=[generate_type], outputs=[history_imgs])
     return G
 
+def remove_bg_ui():
+    from  scripts.remove_bg.paddle import remove
+    with gr.Blocks() as G:
+        with gr.Blocks():
+            with gr.Row():
+                with gr.Tabs():
+                    with gr.TabItem("原图(Original)"):
+                        with gr.Row():
+                            with gr.Column():
+                                gr.Markdown('上传图片(Upload image)')
+                                instance_images = gr.Image(type='filepath', height=360)
+                                run_button = gr.Button('去背(remove background)')
+                            with gr.Column():
+                                with gr.Column():
+                                    gr.Markdown('去背结果(Remove background result)')
+                                    with gr.Column():
+                                        output_images = gr.Gallery(label='Output', show_label=False, elem_id='rmbg_box',
+                                                                   columns=1, rows=1, height=300, object_fit="contain")
+                                run_button.click(fn=remove, inputs=[instance_images], outputs=[output_images])
+
+
 
 with gr.Blocks(mode='interface') as G:
     with gr.Tabs():
@@ -776,17 +797,27 @@ with gr.Blocks(mode='interface') as G:
             commodity_hand_ui()
         with gr.TabItem("换装"):
             clothes_ui()
+        with gr.TabItem("抠图"):
+            remove_bg_ui()
 
 if __name__ == '__main__':
     from utils.download_model import download_model
     from fastapi.middleware.gzip import GZipMiddleware
     from fastapi.middleware import Middleware
+    from fastapi.middleware.cors import CORSMiddleware
     download_model()
 
     app, local_url, share_url = G.queue(concurrency_count=64).launch(server_name=cmd_opts.ip, server_port=cmd_opts.port, show_error=True, share=cmd_opts.share, prevent_thread_lock=True,
-                                                                     app_kwargs={'middleware': [
-                                                                         Middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
-                                                                     ]})
+                                                                     app_kwargs={
+                                                                         'middleware':
+                                                                             [
+                                                                                Middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+                                                                            ],
+                                                                         'CORSMiddleware':
+                                                                         [
+                                                                                Middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]),
+                                                                         ],
+                                                                     })
     import asyncio
     from api.pipe_tasks.base import RunWorker
     Api.Api(app)

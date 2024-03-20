@@ -261,7 +261,7 @@ class Base(ABC, Params):
             return openpose_img
         elif module.find('lineart') != -1:
             # from scripts.piplines.controlnet_pre import lineart_image
-            lineart_img = lineart_image(input_image=self.loca_img_path['mask_image'], width=self.params['width'])
+            lineart_img = lineart_image(input_image=self.loca_img_path['input_image'], width=self.params['width'])
             if is_save:
                 lineart_img.save(os.path.join(self.worker_dir_input, 'lineart.png'))
             return lineart_img

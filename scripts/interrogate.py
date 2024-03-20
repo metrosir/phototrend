@@ -77,7 +77,7 @@ class InterrogateModels:
         self.skip_categories = []
         self.content_dir = os.path.join(models_path, 'interrogate')
         self.running_on_cpu = False
-        self.load()
+        # self.load()
 
     def categories(self):
         return []

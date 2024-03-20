@@ -36,7 +36,13 @@ class Api:
                                response_class=JSONResponse)
         self.app.add_api_route("/v1/dress", DressRunV1().__call__, methods=["post"],
                                response_class=JSONResponse)
-
+        self.app.add_api_route("/v1/temp_file_upload", CollageImageTemplateFileUpload().__call__, methods=["post"],
+                               response_class=JSONResponse)
+        self.app.add_api_route("/v1/temp_file", CollageImageTemplate().__call__, methods=["get"],
+                               response_class=FileResponse)
+        self.app.add_api_route("/v1/image_file_upload", ImageFileUpload().__call__, methods=["get"],
+                               response_class=FileResponse)
+        # CollageImageTemplate
         # self.queue = Queue(api_queue_dir)
 
     def interrogate(self):
